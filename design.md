@@ -4,8 +4,7 @@
 
 ## 目标
 
-1. **副本自动化** — 探险、皎皎币等材料本全自动挂机
-2. **连招自动化** — 战斗技能循环（后续阶段，从社区宏指令蒸馏）
+副本自动化 — 探险、皎皎币等材料本全自动挂机。
 
 ## 技术选型
 
@@ -43,7 +42,6 @@ opencv-python  numpy  pywin32
 config.json                     # 配置
 src/
 ├── main.py                     # 主入口
-├── combos.py                   # 宏指令解析 (eee, qaq)
 ├── core/
 │   ├── screenshot.py           # PrintWindow 后台截图
 │   ├── recognizer.py           # OpenCV 模板匹配
@@ -63,7 +61,6 @@ src/
 - [x] OpenCV 模板匹配
 - [x] PostMessage 后台点击/键盘
 - [x] 页面识别器
-- [x] 宏指令解析
 - [x] 主循环
 
 ### Phase 2：模板采集 + 流程联调（当前）
@@ -71,10 +68,6 @@ src/
 - [ ] 裁剪模板填入 pages/
 - [ ] 跑通全流程
 
-### Phase 3：战斗优化
-- [ ] 收集社区宏指令
-- [ ] 高级连招解析
-
-### Phase 4：打包
+### Phase 3：打包
 - [ ] PyInstaller 编译为 sihost.exe
 - [ ] 使用文档
