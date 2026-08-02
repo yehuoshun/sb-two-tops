@@ -77,15 +77,17 @@
 - 受保护成员：_leading_underscore（如 `_handle_battle`）
 - 注释、commit message 用中文
 
-### 代码风格（PyCharm 默认）
-- 缩进：4 空格，不用 tab
-- 行宽：120 字符，不超
-- 空行：类定义前 2 空行，方法前 1 空行
-- import 分组：标准库 → 第三方 → 本地，每组内字母序
-- 不用 `self` 的方法必须标记 `@staticmethod`
-- 重写父类方法时 `self` 保留
-- 不写没有用的 import
-- 不写没有用的变量
+### 代码风格（PyCharm 零波浪线规则）
+- **缩进**：4 空格，不用 tab
+- **行宽**：120 字符，不超
+- **空行**：类定义前 2 空行，方法前 1 空行
+- **import 分组**：标准库 → 第三方 → 本地，每组内字母序
+- **self 参数**：方法体里必须引用 `self`，否则 PyCharm 飘波浪线
+  - 确实不用 `self` 的方法 → 标记 `@staticmethod`，去掉 `self`
+  - 必须保留 `self` 但暂时没用到 → 加 `_ = self.recognizer` 或 `_ = self.config` 占位
+  - 重写父类抽象方法时 `self` 保留（PyCharm 默认不报重写方法）
+- **import**：不写没有用的 import
+- **变量**：不写没有用的变量
 
 ### 架构
 - **单一职责**：每个文件只做一件事，避免大文件
