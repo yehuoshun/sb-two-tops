@@ -46,10 +46,10 @@
 │   ├── core/
 │   │   ├── screenshot.py          # PrintWindow 后台截图
 │   │   ├── recognizer.py          # OpenCV 模板匹配
-│   │   ├── clicker.py             # PostMessage 后台点击
+│   │   ├── clicker.py             # PostMessage 后台点击/键盘
 │   │   └── config.py              # JSON 配置 + 坐标缩放
 │   └── pages/
-│       ├── base.py                # 页面基类
+│       ├── base.py                # 页面基类（抽象）
 │       ├── home.py                # 主城页面
 │       ├── dungeon.py             # 副本选择/确认
 │       └── battle.py              # 战斗/结算
@@ -70,10 +70,35 @@
 
 ## 开发规范
 
+### 命名
+- 类名：CapWords（如 `HomePage`）
+- 函数/变量：snake_case（如 `click_continue`）
+- 常量：UPPER_CASE（如 `VK_Q`）
+- 受保护成员：_leading_underscore（如 `_handle_battle`）
 - 注释、commit message 用中文
-- 函数/类名用英文
+
+### 代码风格（PyCharm 默认）
+- 缩进：4 空格，不用 tab
+- 行宽：120 字符，不超
+- 空行：类定义前 2 空行，方法前 1 空行
+- import 分组：标准库 → 第三方 → 本地，每组内字母序
+- 不用 `self` 的方法必须标记 `@staticmethod`
+- 重写父类方法时 `self` 保留
+- 不写没有用的 import
+- 不写没有用的变量
+
+### 架构
+- **单一职责**：每个文件只做一件事，避免大文件
+- 核心模块放 `core/`，页面识别放 `pages/`，入口在 `main.py`
+- 截图、识别、点击三者严格分离
+
+### 安全
 - 仓库公开，不写任何敏感信息
-- 代码修改后必须展示给用户确认后再 push
+- 截图文件默认在 `.gitignore` 中排除
+
+### 工作流
+- 代码修改后先展示给用户确认，再 push
+- 开发环境只做 `ast.parse` 语法验证，不装依赖
 
 ## 关键词
 
