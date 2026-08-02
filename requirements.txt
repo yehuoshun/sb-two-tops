@@ -1,3 +1,6 @@
 mss>=9.0.0
 opencv-python-headless>=4.9.0
 numpy>=1.26.0
+pyautogui>=0.9.54
+pywin32>=306
+pyyaml>=6.0
