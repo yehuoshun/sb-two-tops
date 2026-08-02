@@ -19,4 +19,4 @@ class BasePage(ABC):
     @abstractmethod
     def detect(self, screenshot: np.ndarray) -> bool:
         """检测当前是否为此页面"""
-        ...
+        _ = self.recognizer
