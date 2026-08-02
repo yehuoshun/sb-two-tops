@@ -33,8 +33,9 @@ class Recognizer:
             self._template_cache[name] = img
         return self._template_cache[name]
 
+    @staticmethod
     def match(
-            self, screenshot: np.ndarray, template: np.ndarray,
+            screenshot: np.ndarray, template: np.ndarray,
             threshold: float = 0.8) -> Optional[Tuple[int, int, float]]:
         """在截图中匹配单个模板，返回 (x, y, 置信度) 或 None"""
         if len(screenshot.shape) == 3:
@@ -49,10 +50,6 @@ class Recognizer:
             cx = max_loc[0] + template.shape[1] // 2
             cy = max_loc[1] + template.shape[0] // 2
             return (cx, cy, float(max_val))
-    def match_multi(
-            self, screenshot: np.ndarray,
-            templates: Dict[str, str], threshold: float = 0.8
-    ) -> Dict[str, Tuple[int, int, float]]:
 
     def match_multi(
             self, screenshot: np.ndarray,
