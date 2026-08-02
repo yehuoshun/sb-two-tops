@@ -9,7 +9,7 @@
 - **平台**: Linux（代码开发+语法验证）
 - **运行环境**: Windows（实际运行）
 - **无 Windows 测试环境**：代码的 UI 联调、ACE 检测等需在目标机器上跑
-- **可验证部分**：Python 语法检查、逻辑正确性、宏解析
+- **可验证部分**：Python 语法检查、逻辑正确性
 - **禁止在开发环境安装依赖**：不做 `pip install`，只做 `ast.parse` 语法验证
 
 ## 游戏概况
@@ -43,7 +43,6 @@
 ├── design.md                      # 设计文档
 ├── src/
 │   ├── main.py                    # 主入口
-│   ├── combos.py                  # 宏指令解析
 │   ├── core/
 │   │   ├── screenshot.py          # PrintWindow 后台截图
 │   │   ├── recognizer.py          # OpenCV 模板匹配
