@@ -24,10 +24,14 @@
 | 层 | 技术 |
 |----|------|
 | 截图 | PrintWindow (GDI) — 后台截图，不依赖焦点 |
-| 视觉 | OpenCV 模板匹配 + PaddleOCR 文字识别 |
+| 视觉 | OpenCV 模板匹配 |
 | 点击 | PostMessage — 后台消息投递，不移动鼠标 |
 | 状态管理 | 页面识别器（Page pattern） |
 | 打包 | PyInstaller → sihost.exe 伪装系统进程 |
+
+## 依赖
+
+仅 3 个：`opencv-python` `numpy` `pywin32`
 
 ## 代码结构
 
@@ -42,7 +46,7 @@
 │   ├── combos.py                  # 宏指令解析
 │   ├── core/
 │   │   ├── screenshot.py          # PrintWindow 后台截图
-│   │   ├── recognizer.py          # 模板匹配 + PaddleOCR
+│   │   ├── recognizer.py          # OpenCV 模板匹配
 │   │   ├── clicker.py             # PostMessage 后台点击
 │   │   └── config.py              # JSON 配置 + 坐标缩放
 │   └── pages/
@@ -57,7 +61,7 @@
 
 ### 主循环
 ```
-截图(PrintWindow) → 页面识别(OCR+模板匹配) → 决策 → 操作(PostMessage) → 循环
+截图(PrintWindow) → 模板匹配识别页面 → 决策 → 操作(PostMessage) → 循环
 ```
 
 ### 状态流转
@@ -74,4 +78,4 @@
 
 ## 关键词
 
-两个陀螺, RPA, 自动化, 图像识别, Python, OpenCV, PaddleOCR, PrintWindow, PostMessage
+两个陀螺, RPA, 自动化, 图像识别, Python, OpenCV, PrintWindow, PostMessage
