@@ -1,12 +1,5 @@
 """
 主入口 - sb-two-tops 自动化脚本
-
-主循环：截图 → 页面识别 → 决策 → 操作 → 循环
-
-架构：
-  - core/     底层能力（截图、识别、点击、配置）
-  - pages/    页面识别层（纯视觉检测）
-  - main.py   状态机编排
 """
 
 import sys
@@ -65,7 +58,6 @@ class SBAuto:
         )
 
     def _init_modules(self):
-        # 截图
         self.screenshot = Screenshot(
             window_title=self.config.window_title,
             window_class=self.config.window_class,
@@ -74,16 +66,12 @@ class SBAuto:
             logger.error("未找到游戏窗口")
             sys.exit(1)
 
-        # 识别
         self.recognizer = Recognizer()
-
-        # 点击
         self.clicker = Clicker(
             hwnd=self.screenshot.hwnd,
             post_click_wait_ms=self.config.post_click_wait_ms,
         )
 
-        # 页面
         cfg = self.config.data
         self.home = HomePage(self.recognizer, cfg)
         self.dungeon_select = DungeonSelectPage(self.recognizer, cfg)
@@ -94,7 +82,6 @@ class SBAuto:
         logger.info("初始化完成")
 
     def _capture(self):
-        """截图并转为 OpenCV BGR"""
         img = self.screenshot.capture()
         if img is None:
             return None
@@ -103,7 +90,6 @@ class SBAuto:
     # ==================== 状态识别 ====================
 
     def _identify(self, screenshot) -> PageState:
-        """识别当前页面状态"""
         if self.home.detect(screenshot):
             return PageState.HOME
         if self.settlement.detect(screenshot):
@@ -119,26 +105,22 @@ class SBAuto:
     # ==================== 状态处理 ====================
 
     def _handle_home(self, screenshot):
-        """主城 → 进副本"""
         logger.info("主城 — 前往副本")
         self.home.enter_dungeon(self.clicker)
         time.sleep(2)
 
     def _handle_dungeon_select(self, screenshot):
-        """选择副本"""
         logger.info(f"副本选择 — 选择 {self.target}")
         self.dungeon_select.select_dungeon(self.clicker, self.target)
         time.sleep(1)
 
     def _handle_confirm(self, screenshot):
-        """确认进入"""
         logger.info("确认进入副本")
         self.confirm.confirm(self.clicker)
         self._loading_start = time.time()
         time.sleep(2)
 
     def _handle_loading(self):
-        """加载中等待"""
         elapsed = time.time() - self._loading_start
         if elapsed > 30:
             logger.warning("加载超时")
@@ -146,25 +128,20 @@ class SBAuto:
             logger.info(f"加载中... ({elapsed:.0f}s)")
 
     def _handle_battle(self, screenshot):
-        """战斗中 — 执行连招"""
         if self._dungeon_start == 0:
             self._dungeon_start = time.time()
-
         run_combo(self.combo, self.clicker)
         elapsed = time.time() - self._dungeon_start
-        logger.info(f"战斗中... ({elapsed:.0f}s) 执行连招: {self.combo}")
+        logger.info(f"战斗中... ({elapsed:.0f}s) 连招: {self.combo}")
         time.sleep(self.combo_interval)
 
     def _handle_settlement(self, screenshot):
-        """结算 — 继续挑战"""
         self._dungeon_start = 0
         self.run_count += 1
         logger.info(f"结算 — 第 {self.run_count} 次完成")
-
         if self.max_runs > 0 and self.run_count >= self.max_runs:
             logger.info(f"达到最大次数 {self.max_runs}，停止")
             return False
-
         self.settlement.click_continue(self.clicker)
         time.sleep(2)
         return True
