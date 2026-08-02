@@ -1,33 +1,19 @@
 # sb-two-tops
 
-两个陀螺自动化脚本。纯 Python RPA 方案。
+两个陀螺自动化脚本。纯 Python + Win32 API。
 
-## 目标
+## 技术栈
 
-- 副本自动化刷取
-- 战斗连招/技能循环自动化
-- 日常材料本高效挂机
+- **截图**: PrintWindow 后台截图
+- **识别**: OpenCV 模板匹配
+- **操作**: PostMessage 后台点击/键盘
+- **依赖**: 仅 opencv-python + numpy + pywin32
 
-## 游戏背景
+## 快速开始
 
-两个陀螺是一款动作 RPG，1 主控角色 + 2 AI 协战组队。核心战斗机制：
-- 近战 + 远程双武器实时切换
-- 技能无 CD，连击攒点 → 蓄力爆发
-- 立体位移：螺旋飞跃、滑铲、二段跳
+```bash
+pip install -r requirements.txt
+python src/main.py
+```
 
-## 项目状态
-
-项目设计阶段，详见 [设计文档](design.md)。
-
-## 开发规范
-
-- 注释、变量名、commit message 用中文
-- 游戏名一律用"两个陀螺"指代，不出真实名称
-- 仓库公开，不写敏感信息
-- 截图文件默认在 `.gitignore` 中排除
-
-## 注意事项
-
-- 游戏客户端带 ACE 反作弊检测，方案需规避
-- 纯图像识别方案，不涉及内存读写
-- 仅供学习研究使用
+详见 [agent.md](agent.md) 和 [design.md](design.md)。
