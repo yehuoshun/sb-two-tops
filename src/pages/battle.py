@@ -13,7 +13,8 @@ class BattlePage(BasePage):
     """战斗页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        # TODO: 特征图匹配
+        _ = self.recognizer
+        # TODO: self.recognizer.match() 匹配战斗场景
         return False
 
     def use_skill(clicker, key_code: int):
@@ -25,7 +26,8 @@ class SettlementPage(BasePage):
     """结算页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        # TODO: 特征图匹配
+        _ = self.recognizer
+        # TODO: self.recognizer.match() 匹配战斗场景
         return False
 
     def click_continue(clicker):
