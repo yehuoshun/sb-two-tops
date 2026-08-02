@@ -18,7 +18,7 @@ class HomePage(BasePage):
         # 示例：self.recognizer.match(screenshot, self.recognizer.load_template("home", "templates/home/01.png"))
         return False
 
-    def enter_dungeon(self, clicker):
+    def enter_dungeon(clicker):
         """进入副本菜单"""
         # TODO: 填入实际坐标
         logger.info("主城 → 进入副本菜单")
