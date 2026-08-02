@@ -41,7 +41,10 @@ BASE_HEIGHT = 1080
 
 # ---------- ctypes 签名 ----------
 user32 = ctypes.windll.user32
-user32.PostMessageW.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.UINT, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM]
+user32.PostMessageW.argtypes = [
+    ctypes.wintypes.HWND, ctypes.wintypes.UINT,
+    ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM,
+]
 user32.PostMessageW.restype = ctypes.wintypes.BOOL
 user32.ChildWindowFromPointEx.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.POINT, ctypes.wintypes.UINT]
 user32.ChildWindowFromPointEx.restype = ctypes.wintypes.HWND
