@@ -1,6 +1,6 @@
 # sb-two-tops
 
-两个陀螺 — 二重螺旋自动化脚本。
+两个陀螺自动化脚本。
 
 纯 Python RPA 方案，基于 mss + OpenCV。
 
