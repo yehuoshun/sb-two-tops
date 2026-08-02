@@ -17,7 +17,6 @@ from src.core.clicker import Clicker
 from src.pages.home import HomePage
 from src.pages.dungeon import DungeonSelectPage, ConfirmPage
 from src.pages.battle import BattlePage, SettlementPage
-from src.combos import run_combo
 
 logger = logging.getLogger("sb-two-tops.main")
 
@@ -32,9 +31,10 @@ class PageState(Enum):
     SETTLEMENT = auto()
 
 
-class SBAuto:
-    """自动化主控制器"""
+VK_Q = 0x51
 
+
+class SBAuto:
     def __init__(self, config_path: str = "config.json"):
         self.config = Config(config_path)
         self._init_logging()
@@ -43,8 +43,6 @@ class SBAuto:
         self.run_count = 0
         self.max_runs = self.config.get("dungeon", "max_runs", default=0)
         self.target = self.config.get("dungeon", "target", default="探险")
-        self.combo = self.config.get("combat", "combo", default="q")
-        self.combo_interval = self.config.get("combat", "combo_interval", default=2.0)
         self._start_time = time.time()
         self._loading_start = 0
         self._dungeon_start = 0
@@ -83,11 +81,7 @@ class SBAuto:
 
     def _capture(self):
         img = self.screenshot.capture()
-        if img is None:
-            return None
         return img
-
-    # ==================== 状态识别 ====================
 
     def _identify(self, screenshot) -> PageState:
         if self.home.detect(screenshot):
@@ -101,8 +95,6 @@ class SBAuto:
         if self.dungeon_select.detect(screenshot):
             return PageState.DUNGEON_SELECT
         return PageState.UNKNOWN
-
-    # ==================== 状态处理 ====================
 
     def _handle_home(self, screenshot):
         logger.info("主城 — 前往副本")
@@ -130,10 +122,11 @@ class SBAuto:
     def _handle_battle(self, screenshot):
         if self._dungeon_start == 0:
             self._dungeon_start = time.time()
-        run_combo(self.combo, self.clicker)
+        # 按 Q 大招
+        self.clicker.press_key(VK_Q)
         elapsed = time.time() - self._dungeon_start
-        logger.info(f"战斗中... ({elapsed:.0f}s) 连招: {self.combo}")
-        time.sleep(self.combo_interval)
+        logger.info(f"战斗中... ({elapsed:.0f}s) 释放大招 Q")
+        time.sleep(2)
 
     def _handle_settlement(self, screenshot):
         self._dungeon_start = 0
@@ -146,13 +139,10 @@ class SBAuto:
         time.sleep(2)
         return True
 
-    # ==================== 主循环 ====================
-
     def run(self):
         logger.info("=" * 40)
         logger.info("sb-two-tops 启动")
         logger.info(f"目标副本: {self.target}")
-        logger.info(f"战斗连招: {self.combo}")
         logger.info(f"最大次数: {'无限' if self.max_runs == 0 else self.max_runs}")
         logger.info("=" * 40)
 
