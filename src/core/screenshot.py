@@ -54,7 +54,11 @@ user32.GetClientRect.restype = ctypes.wintypes.BOOL
 user32.ClientToScreen.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.POINT)]
 user32.ClientToScreen.restype = ctypes.wintypes.BOOL
 user32.EnumWindows.restype = ctypes.wintypes.BOOL
-user32.EnumWindows.argtypes = [ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM), ctypes.wintypes.LPARAM]
+user32.EnumWindows.argtypes = [
+    ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND,
+                       ctypes.wintypes.LPARAM),
+    ctypes.wintypes.LPARAM,
+]
 user32.GetWindowTextW.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.LPWSTR, ctypes.c_int]
 user32.GetWindowTextLengthW.argtypes = [ctypes.wintypes.HWND]
 user32.IsWindowVisible.argtypes = [ctypes.wintypes.HWND]
@@ -63,11 +67,20 @@ gdi32.CreateCompatibleDC.restype = ctypes.wintypes.HDC
 gdi32.CreateCompatibleDC.argtypes = [ctypes.wintypes.HDC]
 gdi32.CreateCompatibleBitmap.restype = ctypes.wintypes.HBITMAP
 gdi32.CreateCompatibleBitmap.argtypes = [ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int]
-gdi32.SelectObject.restype = ctypes.wintypes.HGDIOBJ
+gdi32.GetDIBits.argtypes = [
+    ctypes.wintypes.HDC, ctypes.wintypes.HBITMAP,
+    ctypes.wintypes.UINT, ctypes.wintypes.UINT,
+    ctypes.c_void_p, ctypes.c_void_p, ctypes.wintypes.UINT,
+]
 gdi32.SelectObject.argtypes = [ctypes.wintypes.HDC, ctypes.wintypes.HGDIOBJ]
 gdi32.DeleteObject.argtypes = [ctypes.wintypes.HGDIOBJ]
 gdi32.DeleteDC.argtypes = [ctypes.wintypes.HDC]
-gdi32.GetDIBits.argtypes = [ctypes.wintypes.HDC, ctypes.wintypes.HBITMAP, ctypes.wintypes.UINT, ctypes.wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p, ctypes.wintypes.UINT]
+gdi32.GetDIBits.argtypes = [
+    ctypes.wintypes.HDC, ctypes.wintypes.HBITMAP,
+    ctypes.wintypes.UINT, ctypes.wintypes.UINT,
+    ctypes.c_void_p, ctypes.c_void_p,
+    ctypes.wintypes.UINT,
+]
 gdi32.GetDIBits.restype = ctypes.c_int
 
 
