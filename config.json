@@ -10,10 +10,6 @@
     "target": "探险",
     "max_runs": 0
   },
-  "combat": {
-    "combo": "q",
-    "combo_interval": 2.0
-  },
   "log": {
     "level": "INFO"
   }
