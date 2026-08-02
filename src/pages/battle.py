@@ -16,7 +16,7 @@ class BattlePage(BasePage):
         # TODO: 特征图匹配
         return False
 
-    def use_skill(self, clicker, key_code: int):
+    def use_skill(clicker, key_code: int):
         clicker.press_key(key_code)
         logger.info(f"释放技能 (key={key_code})")
 
@@ -28,7 +28,7 @@ class SettlementPage(BasePage):
         # TODO: 特征图匹配
         return False
 
-    def click_continue(self, clicker):
+    def click_continue(clicker):
         """点击继续挑战"""
         # TODO: 填入实际坐标
         logger.info("点击继续挑战")
