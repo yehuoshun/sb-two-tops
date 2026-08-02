@@ -13,6 +13,7 @@ class HomePage(BasePage):
     """主城页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
+        _ = self.recognizer
         """检测是否在主城 — 通过模板匹配"""
         # TODO: 截取主城特征图后补匹配逻辑
         # 示例：self.recognizer.match(screenshot, self.recognizer.load_template("home", "templates/home/01.png"))
