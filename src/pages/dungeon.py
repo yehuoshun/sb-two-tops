@@ -13,7 +13,8 @@ class DungeonSelectPage(BasePage):
     """副本选择页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        # TODO: 特征图匹配
+        _ = self.recognizer
+        # TODO: self.recognizer.match() 匹配副本选择页
         return False
 
     def select_dungeon(clicker, target: str = "探险"):
@@ -27,7 +28,8 @@ class ConfirmPage(BasePage):
     """确认进入页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        # TODO: 特征图匹配
+        _ = self.recognizer
+        # TODO: self.recognizer.match() 匹配副本选择页
         return False
 
     def confirm(clicker):
