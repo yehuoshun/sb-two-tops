@@ -1,10 +1,5 @@
 """
 截图模块 - PrintWindow 后台截图
-
-使用 GDI PrintWindow API 后台获取窗口画面，不依赖窗口焦点或可见性。
-窗口被遮挡、位于后台时仍可截图。
-
-单一职责：仅处理窗口截图，不涉及点击或识别。
 """
 
 import ctypes
@@ -13,11 +8,9 @@ import logging
 from typing import Optional
 
 import numpy as np
-from PIL import Image
 
 logger = logging.getLogger("sb-two-tops.screenshot")
 
-# ---------- GDI 常量 ----------
 PW_RENDERFULLCONTENT = 0x00000002
 BI_RGB = 0
 DIB_RGB_COLORS = 0
@@ -46,7 +39,6 @@ class BITMAPINFO(ctypes.Structure):
     ]
 
 
-# ---------- ctypes 签名 ----------
 user32 = ctypes.windll.user32
 gdi32 = ctypes.windll.gdi32
 
@@ -95,13 +87,11 @@ class Screenshot:
         length = user32.GetWindowTextLengthW(hwnd) + 1
         buf = ctypes.create_unicode_buffer(length)
         user32.GetWindowTextW(hwnd, buf, length)
-        title = buf.value
-        if title and self.window_title.lower() in title.lower():
+        if buf.value and self.window_title.lower() in buf.value.lower():
             ctx.append(hwnd)
         return True
 
     def find_window(self) -> bool:
-        """查找游戏窗口"""
         callback_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
         callback = callback_type(self._enum_windows_callback)
         hwnds = []
@@ -109,13 +99,12 @@ class Screenshot:
         if hwnds:
             self.hwnd = hwnds[0]
             self._update_size()
-            logger.info(f"找到窗口: {self.window_title} (hwnd={self.hwnd})")
+            logger.info(f"找到窗口 (hwnd={self.hwnd})")
             return True
         logger.warning(f"未找到窗口: {self.window_title}")
         return False
 
     def _update_size(self):
-        """更新窗口客户区尺寸"""
         rect = ctypes.wintypes.RECT()
         user32.GetClientRect(self.hwnd, ctypes.byref(rect))
         self._width = rect.right - rect.left
@@ -129,8 +118,8 @@ class Screenshot:
     def height(self) -> int:
         return self._height
 
-    def capture(self) -> Optional[Image.Image]:
-        """PrintWindow 后台截图，返回 PIL Image"""
+    def capture(self):
+        """PrintWindow 截图，返回 OpenCV BGR numpy array"""
         if self.hwnd is None:
             return None
 
@@ -139,10 +128,8 @@ class Screenshot:
         hbitmap = gdi32.CreateCompatibleBitmap(hdc_window, self._width, self._height)
         gdi32.SelectObject(hdc_mem, hbitmap)
 
-        # PrintWindow
         success = user32.PrintWindow(self.hwnd, hdc_mem, PW_RENDERFULLCONTENT)
         if not success:
-            # 回退：不传标志
             success = user32.PrintWindow(self.hwnd, hdc_mem, 0)
 
         if not success:
@@ -151,11 +138,10 @@ class Screenshot:
             user32.ReleaseDC(self.hwnd, hdc_window)
             return None
 
-        # 读取像素数据
         bmp_info = BITMAPINFO()
         bmp_info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
         bmp_info.bmiHeader.biWidth = self._width
-        bmp_info.bmiHeader.biHeight = -self._height  # 负值 = 从上到下
+        bmp_info.bmiHeader.biHeight = -self._height
         bmp_info.bmiHeader.biPlanes = 1
         bmp_info.bmiHeader.biBitCount = 32
         bmp_info.bmiHeader.biCompression = BI_RGB
@@ -163,15 +149,10 @@ class Screenshot:
         pixel_data = (ctypes.c_ubyte * (self._width * self._height * 4))()
         gdi32.GetDIBits(hdc_mem, hbitmap, 0, self._height, pixel_data, ctypes.byref(bmp_info), DIB_RGB_COLORS)
 
-        # 清理
         gdi32.DeleteObject(hbitmap)
         gdi32.DeleteDC(hdc_mem)
         user32.ReleaseDC(self.hwnd, hdc_window)
 
-        # 转为 PIL Image (BGRA → RGB)
+        # BGRA raw → BGR numpy (OpenCV 原生格式)
         arr = np.frombuffer(pixel_data, dtype=np.uint8).reshape(self._height, self._width, 4)
-        return Image.fromarray(arr[:, :, :3][:, :, ::-1], "RGB")  # BGRA → RGB
-
-    def to_cv2(self, img: Image.Image):
-        """PIL Image → OpenCV BGR numpy array"""
-        return np.array(img)[:, :, ::-1]  # RGB → BGR
+        return arr[:, :, :3].copy()
