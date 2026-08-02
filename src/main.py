@@ -85,7 +85,7 @@ class SBAuto:
         img = self.screenshot.capture()
         if img is None:
             return None
-        return self.screenshot.to_cv2(img)
+        return img
 
     # ==================== 状态识别 ====================
 
