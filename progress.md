@@ -22,12 +22,13 @@
 - 所有 PyCharm 零警告已达成
 
 #### 已实现的功能
-- 战斗页检测：`TEMPLATE + SEARCH_REGION` 模式，限定左上角 200x200 搜索
+- 战斗页检测代码：`TEMPLATE + SEARCH_REGION` 模式，限定左上角 200x200 搜索
 - 模板裁剪脚本：`test/crop_template.py` — 交互式框选
 - 匹配验证脚本：`test/test_match.py` — 测试模板匹配效果
 - 战斗页模板：`templates/battle/btn_exit.png` (12x33)
 
 #### 待完成
+- [ ] **战斗页检测未经测试** — 代码已写但未在 Windows 上运行验证（明天第一件事）
 - [ ] 采集主城/副本选择/确认/结算页模板
 - [ ] 填入各页面点击坐标
 - [ ] 跑通全流程
