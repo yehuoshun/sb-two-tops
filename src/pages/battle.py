@@ -12,14 +12,18 @@ logger = logging.getLogger("sb-two-tops.pages.battle")
 class BattlePage(BasePage):
     """战斗页面"""
 
-    TEMPLATE = "battle/btn_exit.png"
+    TEMPLATE = "battle/btn_exit_v2.png"
+    SEARCH_REGION = (0, 0, 200, 200)  # 左上角 200x200
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在战斗中 — 匹配左上角退出按钮"""
+        """检测是否在战斗中 — 匹配左上角退出按钮（限定搜索区域）"""
         _ = self.recognizer
         try:
             tpl = self.recognizer.load_template("battle_exit", self.TEMPLATE)
-            match = self.recognizer.match(screenshot, tpl, threshold=0.7)
+            # 裁剪搜索区域
+            x, y, w, h = self.SEARCH_REGION
+            roi = screenshot[y:y + h, x:x + w]
+            match = self.recognizer.match(roi, tpl, threshold=0.9)
             return match is not None
         except (FileNotFoundError, ValueError):
             return False
