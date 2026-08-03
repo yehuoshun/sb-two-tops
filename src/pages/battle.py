@@ -13,11 +13,14 @@ class BattlePage(BasePage):
     """战斗页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
+        """检测是否在战斗中"""
         _ = self.recognizer
         # TODO: self.recognizer.match() 匹配战斗场景
         return False
 
-    def use_skill(clicker, key_code: int):
+    def use_skill(self, clicker, key_code: int):
+        """释放技能"""
+        _ = self.recognizer
         clicker.press_key(key_code)
         logger.info(f"释放技能 (key={key_code})")
 
@@ -26,12 +29,14 @@ class SettlementPage(BasePage):
     """结算页面"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
+        """检测是否在结算页"""
         _ = self.recognizer
         # TODO: self.recognizer.match() 匹配战斗场景
         return False
 
-    def click_continue(clicker):
+    def click_continue(self, clicker):
         """点击继续挑战"""
+        _ = self.recognizer
         # TODO: 填入实际坐标
         logger.info("点击继续挑战")
         # clicker.click(x, y)
