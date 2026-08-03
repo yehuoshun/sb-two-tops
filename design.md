@@ -64,8 +64,14 @@ src/
 - [x] 主循环
 
 ### Phase 2：模板采集 + 流程联调（当前）
-- [ ] 在 Windows 上截取各页面特征图
-- [ ] 裁剪模板填入 pages/
+- [x] PrintWindow 截图验证通过
+- [x] 框架代码零 PyCharm 警告
+- [x] 战斗页检测逻辑：TEMPLATE + SEARCH_REGION 限定搜索
+- [x] 交互式裁剪脚本 (test/crop_template.py)
+- [x] 模板匹配验证脚本 (test/test_match.py)
+- [x] 战斗页模板：templates/battle/btn_exit.png (12x33)
+- [ ] 采集主城/副本选择/确认/结算页模板
+- [ ] 填入各页面点击坐标
 - [ ] 跑通全流程
 
 ### Phase 3：打包

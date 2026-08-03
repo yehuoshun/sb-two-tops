@@ -25,11 +25,14 @@ python src/main.py
 ## 目录结构
 
 ```
-config.json           # 配置（目标副本、次数等）
-src/main.py           # 主程序入口
-src/core/             # 核心模块（截图/识别/点击/配置）
-src/pages/            # 页面识别器
-test/test_capture.py  # 截图测试脚本
+config.json                 # 配置（目标副本、次数等）
+src/main.py                 # 主程序入口
+src/core/                   # 核心模块（截图/识别/点击/配置）
+src/pages/                  # 页面识别器
+test/test_capture.py        # 截图测试
+test/crop_template.py       # 交互式模板裁剪
+test/test_match.py          # 模板匹配验证
+templates/battle/btn_exit.png  # 战斗页退出按钮模板
 ```
 
 详见 [agent.md](agent.md) 和 [design.md](design.md)。

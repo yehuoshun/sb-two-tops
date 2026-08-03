@@ -50,10 +50,16 @@
 │   │   └── config.py              # JSON 配置 + 坐标缩放
 │   └── pages/
 │       ├── base.py                # 页面基类（抽象）
-│       ├── home.py                # 主城页面
+│       ├── home.py                # 主城页面（TEMPLATE + SEARCH_REGION）
 │       ├── dungeon.py             # 副本选择/确认
-│       └── battle.py              # 战斗/结算
-└── templates/                     # UI 特征图模板（待采集）
+│       └── battle.py              # 战斗/结算（TEMPLATE + SEARCH_REGION）
+├── test/
+│   ├── test_capture.py            # 截图测试脚本
+│   ├── crop_template.py           # 交互式模板裁剪
+│   └── test_match.py              # 模板匹配验证
+└── templates/                     # UI 特征图模板
+    └── battle/
+        └── btn_exit.png           # 战斗页退出按钮（12x33）
 ```
 
 ## 核心架构
