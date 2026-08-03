@@ -12,7 +12,7 @@ logger = logging.getLogger("sb-two-tops.pages.battle")
 class BattlePage(BasePage):
     """战斗页面"""
 
-    TEMPLATE = "battle/btn_exit_v2.png"
+    TEMPLATE = "battle/btn_exit.png"
     SEARCH_REGION = (0, 0, 200, 200)  # 左上角 200x200
 
     def detect(self, screenshot: np.ndarray) -> bool:
