@@ -94,23 +94,23 @@ class Screenshot:
         self._width: int = 0
         self._height: int = 0
 
-    def _enum_windows_callback(self, hwnd, ctx):
+    def _enum_windows_callback(self, hwnd, lparam):
         if not user32.IsWindowVisible(hwnd):
             return True
         length = user32.GetWindowTextLengthW(hwnd) + 1
         buf = ctypes.create_unicode_buffer(length)
         user32.GetWindowTextW(hwnd, buf, length)
         if buf.value and self.window_title.lower() in buf.value.lower():
-            ctx.append(hwnd)
+            self._hwnds.append(hwnd)
         return True
 
     def find_window(self) -> bool:
         callback_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
         callback = callback_type(self._enum_windows_callback)
-        hwnds = []
-        user32.EnumWindows(callback, hwnds)
-        if hwnds:
-            self.hwnd = hwnds[0]
+        self._hwnds = []
+        user32.EnumWindows(callback, 0)
+        if self._hwnds:
+            self.hwnd = self._hwnds[0]
             self._update_size()
             logger.info(f"找到窗口 (hwnd={self.hwnd})")
             return True
