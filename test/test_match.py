@@ -21,7 +21,7 @@ def main():
     print(f"截图: {w}x{h}")
 
     # 加载模板
-    template_path = "templates/battle/btn_exit_v2.png"
+    template_path = "templates/battle/btn_exit.png"
     template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
     if template is None:
         print(f"❌ 无法读取 {template_path}")

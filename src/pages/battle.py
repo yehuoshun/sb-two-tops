@@ -12,7 +12,7 @@ logger = logging.getLogger("sb-two-tops.pages.battle")
 class BattlePage(BasePage):
     """战斗页面 — 检测右上角退出按钮"""
 
-    TEMPLATE = "battle/btn_exit_v2.png"
+    TEMPLATE = "battle/btn_exit.png"
     # 退出按钮在右上角区域，搜索 400x200
     SEARCH_REGION = (1520, 0, 400, 200)
 
