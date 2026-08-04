@@ -95,7 +95,6 @@ def test_template_files():
     from pathlib import Path
     templates = [
         "templates/battle/btn_exit.png",
-        "templates/battle/btn_exit_v2.png",
     ]
     for t in templates:
         if Path(t).exists():
