@@ -82,6 +82,17 @@ gdi32.GetDIBits.argtypes = [
     ctypes.wintypes.UINT,
 ]
 gdi32.GetDIBits.restype = ctypes.c_int
+gdi32.BitBlt.argtypes = [
+    ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+    ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.wintypes.DWORD,
+]
+gdi32.BitBlt.restype = ctypes.wintypes.BOOL
+
+user32.GetDC.restype = ctypes.wintypes.HDC
+user32.GetDC.argtypes = [ctypes.wintypes.HWND]
+
+SRCCOPY = 0x00CC0020
+NULL = 0
 
 
 class Screenshot:
@@ -137,10 +148,15 @@ class Screenshot:
         return self._height
 
     def capture(self):
-        """PrintWindow 截图，返回 OpenCV BGR numpy array"""
+        """截图 — PrintWindow 优先，失败则 BitBlt 屏幕截图回退
+
+        Returns:
+            OpenCV BGR numpy array，失败返回 None
+        """
         if self.hwnd is None:
             return None
 
+        # 1. 尝试 PrintWindow
         hdc_window = user32.GetWindowDC(self.hwnd)
         hdc_mem = gdi32.CreateCompatibleDC(hdc_window)
         hbitmap = gdi32.CreateCompatibleBitmap(hdc_window, self._width, self._height)
@@ -150,12 +166,24 @@ class Screenshot:
         if not success:
             success = user32.PrintWindow(self.hwnd, hdc_mem, 0)
 
-        if not success:
+        if success:
+            pixel_data = self._get_pixels(hdc_mem, hbitmap)
             gdi32.DeleteObject(hbitmap)
             gdi32.DeleteDC(hdc_mem)
             user32.ReleaseDC(self.hwnd, hdc_window)
-            return None
+            if pixel_data is not None:
+                return pixel_data
 
+        gdi32.DeleteObject(hbitmap)
+        gdi32.DeleteDC(hdc_mem)
+        user32.ReleaseDC(self.hwnd, hdc_window)
+
+        # 2. PrintWindow 失败，回退 BitBlt 屏幕截图
+        logger.debug("PrintWindow 失败，回退 BitBlt")
+        return self._capture_bitblt()
+
+    def _get_pixels(self, hdc_mem, hbitmap):
+        """从内存 DC 读取像素数据 → BGR numpy array"""
         bmp_info = BITMAPINFO()
         bmp_info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
         bmp_info.bmiHeader.biWidth = self._width
@@ -165,12 +193,40 @@ class Screenshot:
         bmp_info.bmiHeader.biCompression = BI_RGB
 
         pixel_data = (ctypes.c_ubyte * (self._width * self._height * 4))()
-        gdi32.GetDIBits(hdc_mem, hbitmap, 0, self._height, pixel_data, ctypes.byref(bmp_info), DIB_RGB_COLORS)
+        lines = gdi32.GetDIBits(hdc_mem, hbitmap, 0, self._height,
+                                pixel_data, ctypes.byref(bmp_info), DIB_RGB_COLORS)
+        if lines == 0:
+            return None
+
+        arr = np.frombuffer(pixel_data, dtype=np.uint8).reshape(self._height, self._width, 4)
+        return arr[:, :, :3].copy()
+
+    def _capture_bitblt(self):
+        """BitBlt 屏幕截图 — 需要窗口可见、不被遮挡"""
+        # 获取客户区在屏幕上的位置
+        pt = ctypes.wintypes.POINT(0, 0)
+        user32.ClientToScreen(self.hwnd, ctypes.byref(pt))
+        screen_x, screen_y = pt.x, pt.y
+
+        hdc_screen = user32.GetDC(NULL)
+        hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
+        hbitmap = gdi32.CreateCompatibleBitmap(hdc_screen, self._width, self._height)
+        gdi32.SelectObject(hdc_mem, hbitmap)
+
+        success = gdi32.BitBlt(hdc_mem, 0, 0, self._width, self._height,
+                               hdc_screen, screen_x, screen_y, SRCCOPY)
+
+        if not success:
+            gdi32.DeleteObject(hbitmap)
+            gdi32.DeleteDC(hdc_mem)
+            user32.ReleaseDC(NULL, hdc_screen)
+            logger.error("BitBlt 截图失败")
+            return None
+
+        pixel_data = self._get_pixels(hdc_mem, hbitmap)
 
         gdi32.DeleteObject(hbitmap)
         gdi32.DeleteDC(hdc_mem)
-        user32.ReleaseDC(self.hwnd, hdc_window)
+        user32.ReleaseDC(NULL, hdc_screen)
 
-        # BGRA raw → BGR numpy (OpenCV 原生格式)
-        arr = np.frombuffer(pixel_data, dtype=np.uint8).reshape(self._height, self._width, 4)
-        return arr[:, :, :3].copy()
+        return pixel_data
