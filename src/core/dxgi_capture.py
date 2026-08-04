@@ -22,8 +22,8 @@ class GUID(ctypes.Structure):
         ("Data4", ctypes.c_ubyte * 8),
     ]
 
-IID_IDXGIDevice = GUID(0x54ec77fa, 0x1377, 0x44e6,
-                       (0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c))
+IID_IDXGIFactory1 = GUID(0x770aae78, 0xf26f, 0x4dba,
+                         (0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87))
 IID_IDXGIOutput1 = GUID(0x00cddea8, 0x939b, 0x4b83,
                         (0xa3, 0x40, 0xa6, 0x85, 0x22, 0xe4, 0x4c, 0x4f))
 IID_ID3D11Texture2D = GUID(0x6f15aaf2, 0xd208, 0x4e89,
@@ -124,7 +124,9 @@ class DXGICapture:
 
     def _init_dxgi(self):
         d3d11 = ctypes.windll.d3d11
+        dxgi = ctypes.windll.dxgi
 
+        # 1. D3D11CreateDevice
         feature_levels = (ctypes.c_uint * 1)(0x9300)
         device_ptr = ctypes.c_void_p()
         context_ptr = ctypes.c_void_p()
@@ -141,22 +143,30 @@ class DXGICapture:
         self._device = device_ptr
         self._context = context_ptr
 
-        # device → IDXGIDevice → GetAdapter → EnumOutputs → IDXGIOutput1
-        dxgi_device = _com_query(device_ptr, IID_IDXGIDevice)
+        # 2. CreateDXGIFactory1 → EnumAdapters1 → EnumOutputs → IDXGIOutput1
+        factory = ctypes.c_void_p()
+        hr = dxgi.CreateDXGIFactory1(ctypes.byref(IID_IDXGIFactory1), ctypes.byref(factory))
+        if hr < 0:
+            raise OSError(f"CreateDXGIFactory1 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
         adapter = ctypes.c_void_p()
-        _com_call(dxgi_device, 7, ctypes.pointer(adapter))
+        hr = _com_call(factory, 12, ctypes.c_void_p(0), ctypes.pointer(adapter))  # EnumAdapters1
+        if hr < 0:
+            raise OSError(f"EnumAdapters1 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
         output = ctypes.c_void_p()
-        _com_call(adapter, 7, ctypes.c_void_p(0), ctypes.pointer(output))
+        hr = _com_call(adapter, 7, ctypes.c_void_p(0), ctypes.pointer(output))  # EnumOutputs
+        if hr < 0:
+            raise OSError(f"EnumOutputs 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
         output1 = _com_query(output, IID_IDXGIOutput1)
 
         desc = DXGI_OUTPUT_DESC()
-        _com_call(output1, 10, ctypes.pointer(desc))
+        _com_call(output1, 7, ctypes.byref(desc))  # GetDesc
         self._width = desc.DesktopCoordinates.right - desc.DesktopCoordinates.left
         self._height = desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top
 
+        # 3. DuplicateOutput（传入 D3D11 设备指针作为 IUnknown）
         duplication = ctypes.c_void_p()
         hr = _com_call(output1, 22, device_ptr, ctypes.pointer(duplication))
         if hr < 0:
@@ -172,7 +182,7 @@ class DXGICapture:
         frame_info = DXGI_OUTDUPL_FRAME_INFO()
         resource = ctypes.c_void_p()
 
-        hr = _com_call(self._duplication, 8, ctypes.c_void_p(timeout_ms),
+        hr = _com_call(self._duplication, 4, ctypes.c_void_p(timeout_ms),
                        ctypes.pointer(frame_info), ctypes.pointer(resource))
 
         if hr == DXGI_ERROR_WAIT_TIMEOUT:
@@ -232,7 +242,7 @@ class DXGICapture:
             return result
 
         finally:
-            _com_call(self._duplication, 9)
+            _com_call(self._duplication, 10)
 
     @property
     def width(self) -> int:
