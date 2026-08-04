@@ -13,7 +13,7 @@ import numpy as np
 
 logger = logging.getLogger("sb-two-tops.dxgi")
 
-# ── GUID ──
+# ── GUID 结构体 ──
 class GUID(ctypes.Structure):
     _fields_ = [
         ("Data1", ctypes.c_uint),
@@ -29,11 +29,9 @@ IID_IDXGIOutput1 = GUID(0x00cddea8, 0x939b, 0x4b83,
 IID_ID3D11Texture2D = GUID(0x6f15aaf2, 0xd208, 0x4e89,
                            (0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c))
 
-# ── DXGI 常量 ──
+# ── 常量 ──
 DXGI_ERROR_WAIT_TIMEOUT = 0x887A0027
 DXGI_ERROR_ACCESS_LOST = 0x887A0026
-
-# D3D11
 D3D11_SDK_VERSION = 7
 D3D_DRIVER_TYPE_HARDWARE = 1
 D3D11_CREATE_DEVICE_BGRA_SUPPORT = 0x20
@@ -78,37 +76,64 @@ class D3D11_TEXTURE2D_DESC(ctypes.Structure):
         ("CPUAccessFlags", ctypes.c_uint), ("MiscFlags", ctypes.c_uint),
     ]
 
+# ── COM 函数原型 ──
+# IUnknown
+QI_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                               ctypes.POINTER(GUID), ctypes.POINTER(ctypes.c_void_p))
 
-def _com_call(ptr, index, *args):
-    """调用 COM 虚函数表。所有参数统一为 c_void_p。"""
+# IDXGIFactory1::EnumAdapters1
+EA1_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p))
+
+# IDXGIAdapter1::EnumOutputs
+EO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                               ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p))
+
+# IDXGIOutput::GetDesc
+GD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                               ctypes.POINTER(DXGI_OUTPUT_DESC))
+
+# IDXGIOutput1::DuplicateOutput
+DO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                               ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
+
+# IDXGIOutputDuplication::AcquireNextFrame
+ANF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                ctypes.c_uint, ctypes.POINTER(DXGI_OUTDUPL_FRAME_INFO),
+                                ctypes.POINTER(ctypes.c_void_p))
+
+# IDXGIOutputDuplication::ReleaseFrame
+RF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p)
+
+# ID3D11Texture2D::GetDesc
+TD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                               ctypes.POINTER(D3D11_TEXTURE2D_DESC))
+
+# ID3D11Device::CreateTexture2D
+CT2D_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                 ctypes.POINTER(D3D11_TEXTURE2D_DESC),
+                                 ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
+
+# ID3D11DeviceContext::CopySubresourceRegion
+CSR_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                ctypes.c_void_p, ctypes.c_uint, ctypes.c_void_p,
+                                ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
+                                ctypes.c_uint)
+
+# ID3D11DeviceContext::Map
+MAP_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint,
+                                ctypes.c_uint, ctypes.POINTER(D3D11_MAPPED_SUBRESOURCE))
+
+# ID3D11DeviceContext::Unmap
+UNMAP_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
+                                  ctypes.c_void_p, ctypes.c_uint)
+
+
+def _vtbl_call(ptr, index, proto):
+    """获取 COM vtable 函数指针并包装为 proto 类型"""
     vtbl = ctypes.cast(ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p)))
-    n = len(args) + 1
-    proto = ctypes.WINFUNCTYPE(ctypes.c_long, *([ctypes.c_void_p] * n))
-    func = proto(vtbl[0][index])
-
-    cargs = []
-    for a in args:
-        if isinstance(a, ctypes.c_void_p):
-            cargs.append(a)
-        elif a is None:
-            cargs.append(ctypes.c_void_p(0))
-        elif isinstance(a, int):
-            cargs.append(ctypes.c_void_p(a))
-        elif hasattr(a, '_obj'):
-            # byref 对象 → 取底层地址
-            cargs.append(ctypes.c_void_p(ctypes.addressof(a._obj)))
-        else:
-            cargs.append(ctypes.cast(a, ctypes.c_void_p))
-    return func(ptr, *cargs)
-
-
-def _com_query(ptr, iid):
-    """COM QueryInterface，返回接口指针"""
-    result = ctypes.c_void_p()
-    hr = _com_call(ptr, 0, ctypes.byref(iid), ctypes.pointer(result))
-    if hr < 0:
-        raise OSError(f"QueryInterface 失败: 0x{hr & 0xFFFFFFFF:08X}")
-    return result
+    return proto(vtbl[0][index])
 
 
 class DXGICapture:
@@ -143,32 +168,44 @@ class DXGICapture:
         self._device = device_ptr
         self._context = context_ptr
 
-        # 2. CreateDXGIFactory1 → EnumAdapters1 → EnumOutputs → IDXGIOutput1
+        # 2. CreateDXGIFactory1
         factory = ctypes.c_void_p()
         hr = dxgi.CreateDXGIFactory1(ctypes.byref(IID_IDXGIFactory1), ctypes.byref(factory))
         if hr < 0:
             raise OSError(f"CreateDXGIFactory1 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
+        # 3. EnumAdapters1(0)
         adapter = ctypes.c_void_p()
-        hr = _com_call(factory, 12, ctypes.c_void_p(0), ctypes.pointer(adapter))  # EnumAdapters1
+        ea1 = _vtbl_call(factory, 12, EA1_PROTO)
+        hr = ea1(factory, 0, ctypes.byref(adapter))
         if hr < 0:
             raise OSError(f"EnumAdapters1 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
+        # 4. EnumOutputs(0)
         output = ctypes.c_void_p()
-        hr = _com_call(adapter, 7, ctypes.c_void_p(0), ctypes.pointer(output))  # EnumOutputs
+        eo = _vtbl_call(adapter, 7, EO_PROTO)
+        hr = eo(adapter, 0, ctypes.byref(output))
         if hr < 0:
             raise OSError(f"EnumOutputs 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
-        output1 = _com_query(output, IID_IDXGIOutput1)
+        # 5. output → IDXGIOutput1
+        output1 = ctypes.c_void_p()
+        qi = _vtbl_call(output, 0, QI_PROTO)
+        hr = qi(output, ctypes.byref(IID_IDXGIOutput1), ctypes.byref(output1))
+        if hr < 0:
+            raise OSError(f"QueryInterface(IDXGIOutput1) 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
+        # 6. GetDesc
         desc = DXGI_OUTPUT_DESC()
-        _com_call(output1, 7, ctypes.byref(desc))  # GetDesc
+        gd = _vtbl_call(output1, 7, GD_PROTO)
+        gd(output1, ctypes.byref(desc))
         self._width = desc.DesktopCoordinates.right - desc.DesktopCoordinates.left
         self._height = desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top
 
-        # 3. DuplicateOutput（传入 D3D11 设备指针作为 IUnknown）
+        # 7. DuplicateOutput
         duplication = ctypes.c_void_p()
-        hr = _com_call(output1, 22, device_ptr, ctypes.pointer(duplication))
+        do = _vtbl_call(output1, 22, DO_PROTO)
+        hr = do(output1, device_ptr, ctypes.byref(duplication))
         if hr < 0:
             raise OSError(f"DuplicateOutput 失败: 0x{hr & 0xFFFFFFFF:08X}")
         self._duplication = duplication
@@ -182,8 +219,8 @@ class DXGICapture:
         frame_info = DXGI_OUTDUPL_FRAME_INFO()
         resource = ctypes.c_void_p()
 
-        hr = _com_call(self._duplication, 4, ctypes.c_void_p(timeout_ms),
-                       ctypes.pointer(frame_info), ctypes.pointer(resource))
+        anf = _vtbl_call(self._duplication, 4, ANF_PROTO)
+        hr = anf(self._duplication, timeout_ms, ctypes.byref(frame_info), ctypes.byref(resource))
 
         if hr == DXGI_ERROR_WAIT_TIMEOUT:
             return None
@@ -195,11 +232,17 @@ class DXGICapture:
             return None
 
         try:
-            texture = _com_query(resource, IID_ID3D11Texture2D)
+            # resource → ID3D11Texture2D
+            texture = ctypes.c_void_p()
+            qi = _vtbl_call(resource, 0, QI_PROTO)
+            qi(resource, ctypes.byref(IID_ID3D11Texture2D), ctypes.byref(texture))
 
+            # GetDesc
             tex_desc = D3D11_TEXTURE2D_DESC()
-            _com_call(texture, 10, ctypes.pointer(tex_desc))
+            td = _vtbl_call(texture, 10, TD_PROTO)
+            td(texture, ctypes.byref(tex_desc))
 
+            # Create staging texture
             staging_desc = D3D11_TEXTURE2D_DESC()
             staging_desc.Width = tex_desc.Width
             staging_desc.Height = tex_desc.Height
@@ -211,17 +254,19 @@ class DXGICapture:
             staging_desc.CPUAccessFlags = D3D11_MAP_READ
 
             staging = ctypes.c_void_p()
-            hr = _com_call(self._device, 5, ctypes.pointer(staging_desc),
-                           ctypes.c_void_p(0), ctypes.pointer(staging))
+            ct2d = _vtbl_call(self._device, 5, CT2D_PROTO)
+            hr = ct2d(self._device, ctypes.byref(staging_desc), None, ctypes.byref(staging))
             if hr < 0:
                 return None
 
-            _com_call(self._context, 47, staging, texture, ctypes.c_void_p(0))
+            # CopySubresourceRegion
+            csr = _vtbl_call(self._context, 47, CSR_PROTO)
+            csr(self._context, staging, 0, 0, 0, 0, texture, 0, None)
 
+            # Map
             mapped = D3D11_MAPPED_SUBRESOURCE()
-            _com_call(self._context, 14, staging, ctypes.c_void_p(0),
-                      ctypes.c_void_p(D3D11_MAP_READ), ctypes.c_void_p(0),
-                      ctypes.pointer(mapped))
+            m = _vtbl_call(self._context, 14, MAP_PROTO)
+            m(self._context, staging, 0, D3D11_MAP_READ, 0, ctypes.byref(mapped))
 
             width = tex_desc.Width
             height = tex_desc.Height
@@ -238,11 +283,15 @@ class DXGICapture:
                 arr = arr[:, :width * 4].reshape(height, width, 4)
                 result = arr[:, :, :3].copy()
 
-            _com_call(self._context, 15, staging, ctypes.c_void_p(0))
+            # Unmap
+            um = _vtbl_call(self._context, 15, UNMAP_PROTO)
+            um(self._context, staging, 0)
+
             return result
 
         finally:
-            _com_call(self._duplication, 10)
+            rf = _vtbl_call(self._duplication, 10, RF_PROTO)
+            rf(self._duplication)
 
     @property
     def width(self) -> int:
