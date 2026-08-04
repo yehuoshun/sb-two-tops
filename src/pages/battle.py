@@ -10,10 +10,11 @@ logger = logging.getLogger("sb-two-tops.pages.battle")
 
 
 class BattlePage(BasePage):
-    """战斗页面"""
+    """战斗页面 — 检测右上角退出按钮"""
 
-    TEMPLATE = "battle/btn_exit.png"
-    SEARCH_REGION = (0, 0, 200, 200)  # 左上角 200x200
+    TEMPLATE = "battle/btn_exit_v2.png"
+    # 退出按钮在右上角区域，搜索 400x200
+    SEARCH_REGION = (1520, 0, 400, 200)
 
     def detect(self, screenshot: np.ndarray) -> bool:
         """检测是否在战斗中 — 匹配左上角退出按钮（限定搜索区域）"""
