@@ -14,28 +14,58 @@ import cv2
 
 
 def main():
-    cap = Screenshot("二重螺旋")
+    import ctypes
+    import ctypes.wintypes
+    user32 = ctypes.windll.user32
 
-    if not cap.find_window():
-        print("❌ 未找到游戏窗口，请确保游戏正在运行")
+    # 先列出所有候选窗口
+    windows = []
+    def cb(h, _):
+        if not user32.IsWindowVisible(h):
+            return True
+        n = user32.GetWindowTextLengthW(h) + 1
+        b = ctypes.create_unicode_buffer(n)
+        user32.GetWindowTextW(h, b, n)
+        if not b.value:
+            return True
+        rect = ctypes.wintypes.RECT()
+        user32.GetWindowRect(h, ctypes.byref(rect))
+        w = rect.right - rect.left
+        h = rect.bottom - rect.top
+        if w > 200 and h > 200:
+            windows.append((h, b.value, w, h))
+        return True
+
+    cb_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+    user32.EnumWindows(cb_type(cb), 0)
+
+    print("选择窗口:")
+    for i, (hwnd, title, w, h) in enumerate(windows):
+        print(f"  [{i}] {w}x{h}  \"{title}\"")
+
+    idx = input("\n输入编号: ").strip()
+    if not idx.isdigit() or int(idx) >= len(windows):
+        print("❌ 无效")
         return False
 
-    # 确认找到的是哪个窗口
-    import ctypes
-    n = ctypes.windll.user32.GetWindowTextLengthW(cap.hwnd) + 1
-    b = ctypes.create_unicode_buffer(n)
-    ctypes.windll.user32.GetWindowTextW(cap.hwnd, b, n)
-    print(f"匹配窗口: \"{b.value}\" hwnd={cap.hwnd} {cap.width}x{cap.height}")
+    hwnd = windows[int(idx)][0]
 
+    # 直接用指定 hwnd 截图
+    from src.core.screenshot import Screenshot
+    cap = Screenshot("")
+    cap.hwnd = hwnd
+    cap._update_size()
+
+    print(f"截图: {cap.width}x{cap.height}")
     img = cap.capture()
     if img is None:
         print("❌ 截图失败")
         return False
 
+    import cv2
     path = "test_capture.png"
     cv2.imwrite(path, img)
-    print(f"✅ 截图成功: {img.shape[1]}x{img.shape[0]}")
-    print(f"   已保存: {path}")
+    print(f"✅ 已保存: {path}")
     return True
 
 
