@@ -20,10 +20,9 @@ class BattlePage(BasePage):
         _ = self.recognizer
         try:
             tpl = self.recognizer.load_template("battle_exit", self.TEMPLATE)
-            # 裁剪搜索区域
-            x, y, w, h = self.SEARCH_REGION
-            roi = screenshot[y:y + h, x:x + w]
-            match = self.recognizer.match(roi, tpl, threshold=0.9)
+            match = self.recognizer.match_in_region(
+                screenshot, tpl, self.SEARCH_REGION, threshold=0.9
+            )
             return match is not None
         except (FileNotFoundError, ValueError):
             return False

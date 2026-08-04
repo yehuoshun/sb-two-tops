@@ -117,6 +117,11 @@ class Screenshot:
         logger.warning(f"未找到窗口: {self.window_title}")
         return False
 
+    def reload_window(self) -> bool:
+        """重新查找窗口（用于恢复丢失的窗口句柄）"""
+        logger.info("重新查找窗口...")
+        return self.find_window()
+
     def _update_size(self):
         rect = ctypes.wintypes.RECT()
         user32.GetClientRect(self.hwnd, ctypes.byref(rect))

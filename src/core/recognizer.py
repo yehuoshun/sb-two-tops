@@ -22,9 +22,20 @@ class Recognizer:
         self._template_cache: Dict[str, np.ndarray] = {}
 
     def load_template(self, name: str, path: str) -> np.ndarray:
-        """加载模板图片并缓存"""
+        """加载模板图片并缓存
+
+        Args:
+            name: 缓存键名
+            path: 模板文件路径。如果以 templates/ 开头，相对于项目根目录；
+                  否则相对于 templates_dir
+        """
         if name not in self._template_cache:
             full_path = Path(path)
+            if not full_path.is_absolute():
+                # 如果路径以 templates/ 开头，直接使用；否则拼到 templates_dir 下
+                if not str(full_path).startswith("templates") \
+                        and not str(full_path).startswith(str(self.templates_dir)):
+                    full_path = self.templates_dir / full_path
             if not full_path.exists():
                 raise FileNotFoundError(f"模板文件不存在: {full_path}")
             img = cv2.imread(str(full_path), cv2.IMREAD_GRAYSCALE)
@@ -50,6 +61,30 @@ class Recognizer:
             cx = max_loc[0] + template.shape[1] // 2
             cy = max_loc[1] + template.shape[0] // 2
             return (cx, cy, float(max_val))
+
+    @staticmethod
+    def match_in_region(
+            screenshot: np.ndarray, template: np.ndarray,
+            region: Tuple[int, int, int, int],
+            threshold: float = 0.8) -> Optional[Tuple[int, int, float]]:
+        """在截图的指定区域内匹配模板
+
+        Args:
+            screenshot: 全屏截图
+            template: 模板图片
+            region: (x, y, w, h) 搜索区域（相对于截图左上角）
+            threshold: 匹配阈值
+
+        Returns:
+            (x, y, 置信度) — 坐标已转换为全屏坐标
+        """
+        rx, ry, rw, rh = region
+        roi = screenshot[ry:ry + rh, rx:rx + rw]
+        result = Recognizer.match(roi, template, threshold)
+        if result:
+            cx, cy, conf = result
+            return (cx + rx, cy + ry, conf)
+        return None
 
     def match_multi(
             self, screenshot: np.ndarray,

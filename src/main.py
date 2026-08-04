@@ -46,6 +46,8 @@ class SBAuto:
         self._start_time = time.time()
         self._loading_start = 0
         self._dungeon_start = 0
+        self._unknown_count = 0  # 连续未知状态计数
+        self._max_unknown = 10   # 连续未知超过此值则尝试恢复
 
     def _init_logging(self):
         level = getattr(logging, self.config.get("log", "level", default="INFO").upper(), logging.INFO)
@@ -96,6 +98,14 @@ class SBAuto:
             return PageState.DUNGEON_SELECT
         return PageState.UNKNOWN
 
+    def _on_state_change(self, new_state: PageState):
+        """状态切换回调 — 重置卡死计数器"""
+        if new_state != PageState.UNKNOWN:
+            self._unknown_count = 0
+        if new_state != self.state:
+            logger.info(f"状态切换: {self.state.name} → {new_state.name}")
+            self.state = new_state
+
     def _handle_home(self, screenshot):
         logger.info("主城 — 前往副本")
         self.home.enter_dungeon(self.clicker)
@@ -118,6 +128,17 @@ class SBAuto:
             logger.warning("加载超时")
         else:
             logger.info(f"加载中... ({elapsed:.0f}s)")
+
+    def _handle_unknown(self, screenshot):
+        """未知状态处理 — 连续未知超过阈值则尝试恢复"""
+        self._unknown_count += 1
+        if self._unknown_count >= self._max_unknown:
+            logger.warning(f"连续未知 {self._unknown_count} 次，尝试恢复窗口")
+            if self.screenshot.reload_window():
+                logger.info("窗口重新定位成功")
+            else:
+                logger.error("无法找到游戏窗口，等待重试")
+            self._unknown_count = 0
 
     def _handle_battle(self, screenshot):
         if self._dungeon_start == 0:
@@ -154,9 +175,7 @@ class SBAuto:
                     continue
 
                 state = self._identify(screenshot)
-                if state != self.state:
-                    logger.info(f"状态切换: {self.state.name} → {state.name}")
-                    self.state = state
+                self._on_state_change(state)
 
                 if state == PageState.HOME:
                     self._handle_home(screenshot)
@@ -172,7 +191,7 @@ class SBAuto:
                 elif state == PageState.LOADING:
                     self._handle_loading()
                 else:
-                    time.sleep(2)
+                    self._handle_unknown(screenshot)
 
                 time.sleep(0.5)
 
