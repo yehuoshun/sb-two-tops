@@ -20,9 +20,16 @@ def main():
         print("❌ 未找到游戏窗口，请确保游戏正在运行")
         return False
 
+    # 确认找到的是哪个窗口
+    import ctypes
+    n = ctypes.windll.user32.GetWindowTextLengthW(cap.hwnd) + 1
+    b = ctypes.create_unicode_buffer(n)
+    ctypes.windll.user32.GetWindowTextW(cap.hwnd, b, n)
+    print(f"匹配窗口: \"{b.value}\" hwnd={cap.hwnd} {cap.width}x{cap.height}")
+
     img = cap.capture()
     if img is None:
-        print("❌ PrintWindow 截图失败")
+        print("❌ 截图失败")
         return False
 
     path = "test_capture.png"

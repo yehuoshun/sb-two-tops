@@ -123,7 +123,13 @@ class Screenshot:
         if self._hwnds:
             self.hwnd = self._hwnds[0]
             self._update_size()
-            logger.info(f"找到窗口 (hwnd={self.hwnd})")
+            # 输出匹配到的窗口
+            n = user32.GetWindowTextLengthW(self.hwnd) + 1
+            b = ctypes.create_unicode_buffer(n)
+            user32.GetWindowTextW(self.hwnd, b, n)
+            logger.info(f"找到窗口: \"{b.value}\" (hwnd={self.hwnd}) {self._width}x{self._height}")
+            if len(self._hwnds) > 1:
+                logger.warning(f"匹配到 {len(self._hwnds)} 个窗口，使用第一个")
             return True
         logger.warning(f"未找到窗口: {self.window_title}")
         return False
