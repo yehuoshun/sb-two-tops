@@ -14,12 +14,20 @@ import numpy as np
 logger = logging.getLogger("sb-two-tops.dxgi")
 
 # ── GUID ──
-IID_IDXGIDevice = ctypes.create_string_buffer(
-    b"\xfa\x77\xec\x54\x77\x13\xe6\x44\x8c\x32\x88\xfd\x5f\x44\xc8\x4c")
-IID_IDXGIOutput1 = ctypes.create_string_buffer(
-    b"\xa8\xde\xcd\x00\x9b\x93\x83\x4b\xa3\x40\xa6\x85\x22\xe4\x4c\x4f")
-IID_ID3D11Texture2D = ctypes.create_string_buffer(
-    b"\xf2\xaa\x15\x6f\x08\xd2\x89\x4e\x9a\xb4\x48\x95\x35\xd3\x4f\x9c")
+class GUID(ctypes.Structure):
+    _fields_ = [
+        ("Data1", ctypes.c_uint),
+        ("Data2", ctypes.c_ushort),
+        ("Data3", ctypes.c_ushort),
+        ("Data4", ctypes.c_ubyte * 8),
+    ]
+
+IID_IDXGIDevice = GUID(0x54ec77fa, 0x1377, 0x44e6,
+                       (0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c))
+IID_IDXGIOutput1 = GUID(0x00cddea8, 0x939b, 0x4b83,
+                        (0xa3, 0x40, 0xa6, 0x85, 0x22, 0xe4, 0x4c, 0x4f))
+IID_ID3D11Texture2D = GUID(0x6f15aaf2, 0xd208, 0x4e89,
+                           (0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c))
 
 # ── DXGI 常量 ──
 DXGI_ERROR_WAIT_TIMEOUT = 0x887A0027
@@ -86,15 +94,18 @@ def _com_call(ptr, index, *args):
             cargs.append(ctypes.c_void_p(0))
         elif isinstance(a, int):
             cargs.append(ctypes.c_void_p(a))
+        elif hasattr(a, '_obj'):
+            # byref 对象 → 取底层地址
+            cargs.append(ctypes.c_void_p(ctypes.addressof(a._obj)))
         else:
             cargs.append(ctypes.cast(a, ctypes.c_void_p))
     return func(ptr, *cargs)
 
 
-def _com_query(ptr, iid_buf):
+def _com_query(ptr, iid):
     """COM QueryInterface，返回接口指针"""
     result = ctypes.c_void_p()
-    hr = _com_call(ptr, 0, ctypes.cast(iid_buf, ctypes.c_void_p), ctypes.pointer(result))
+    hr = _com_call(ptr, 0, ctypes.byref(iid), ctypes.pointer(result))
     if hr < 0:
         raise OSError(f"QueryInterface 失败: 0x{hr & 0xFFFFFFFF:08X}")
     return result
