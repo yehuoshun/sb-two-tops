@@ -1,102 +1,24 @@
 """
-截图模块 - PrintWindow 后台截图
+截图模块 — DXGI Desktop Duplication 后台截图
+
+使用 dxcam 库封装 DXGI 桌面复制 API，替代 PrintWindow。
+支持 DirectX 游戏后台截图，窗口不可最小化但可被遮挡。
+
+依赖: dxcam (pip install dxcam)
 """
 
-import ctypes
-import ctypes.wintypes
 import logging
 from typing import Optional
 
 import numpy as np
+import win32gui
+import win32con
 
 logger = logging.getLogger("sb-two-tops.screenshot")
 
-PW_RENDERFULLCONTENT = 0x00000002
-BI_RGB = 0
-DIB_RGB_COLORS = 0
-
-
-class BITMAPINFOHEADER(ctypes.Structure):
-    _fields_ = [
-        ("biSize", ctypes.wintypes.DWORD),
-        ("biWidth", ctypes.wintypes.LONG),
-        ("biHeight", ctypes.wintypes.LONG),
-        ("biPlanes", ctypes.wintypes.WORD),
-        ("biBitCount", ctypes.wintypes.WORD),
-        ("biCompression", ctypes.wintypes.DWORD),
-        ("biSizeImage", ctypes.wintypes.DWORD),
-        ("biXPelsPerMeter", ctypes.wintypes.LONG),
-        ("biYPelsPerMeter", ctypes.wintypes.LONG),
-        ("biClrUsed", ctypes.wintypes.DWORD),
-        ("biClrImportant", ctypes.wintypes.DWORD),
-    ]
-
-
-class BITMAPINFO(ctypes.Structure):
-    _fields_ = [
-        ("bmiHeader", BITMAPINFOHEADER),
-        ("bmiColors", ctypes.wintypes.DWORD * 0),
-    ]
-
-
-user32 = ctypes.windll.user32
-gdi32 = ctypes.windll.gdi32
-
-user32.GetWindowDC.restype = ctypes.wintypes.HDC
-user32.GetWindowDC.argtypes = [ctypes.wintypes.HWND]
-user32.ReleaseDC.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.HDC]
-user32.PrintWindow.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.HDC, ctypes.wintypes.UINT]
-user32.PrintWindow.restype = ctypes.wintypes.BOOL
-user32.GetWindowRect.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.RECT)]
-user32.GetWindowRect.restype = ctypes.wintypes.BOOL
-user32.GetClientRect.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.RECT)]
-user32.GetClientRect.restype = ctypes.wintypes.BOOL
-user32.ClientToScreen.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.POINT)]
-user32.ClientToScreen.restype = ctypes.wintypes.BOOL
-user32.EnumWindows.restype = ctypes.wintypes.BOOL
-user32.EnumWindows.argtypes = [
-    ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND,
-                       ctypes.wintypes.LPARAM),
-    ctypes.wintypes.LPARAM,
-]
-user32.GetWindowTextW.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.LPWSTR, ctypes.c_int]
-user32.GetWindowTextLengthW.argtypes = [ctypes.wintypes.HWND]
-user32.IsWindowVisible.argtypes = [ctypes.wintypes.HWND]
-
-gdi32.CreateCompatibleDC.restype = ctypes.wintypes.HDC
-gdi32.CreateCompatibleDC.argtypes = [ctypes.wintypes.HDC]
-gdi32.CreateCompatibleBitmap.restype = ctypes.wintypes.HBITMAP
-gdi32.CreateCompatibleBitmap.argtypes = [ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int]
-gdi32.GetDIBits.argtypes = [
-    ctypes.wintypes.HDC, ctypes.wintypes.HBITMAP,
-    ctypes.wintypes.UINT, ctypes.wintypes.UINT,
-    ctypes.c_void_p, ctypes.c_void_p, ctypes.wintypes.UINT,
-]
-gdi32.SelectObject.argtypes = [ctypes.wintypes.HDC, ctypes.wintypes.HGDIOBJ]
-gdi32.DeleteObject.argtypes = [ctypes.wintypes.HGDIOBJ]
-gdi32.DeleteDC.argtypes = [ctypes.wintypes.HDC]
-gdi32.GetDIBits.argtypes = [
-    ctypes.wintypes.HDC, ctypes.wintypes.HBITMAP,
-    ctypes.wintypes.UINT, ctypes.wintypes.UINT,
-    ctypes.c_void_p, ctypes.c_void_p,
-    ctypes.wintypes.UINT,
-]
-gdi32.GetDIBits.restype = ctypes.c_int
-gdi32.BitBlt.argtypes = [
-    ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
-    ctypes.wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.wintypes.DWORD,
-]
-gdi32.BitBlt.restype = ctypes.wintypes.BOOL
-
-user32.GetDC.restype = ctypes.wintypes.HDC
-user32.GetDC.argtypes = [ctypes.wintypes.HWND]
-
-SRCCOPY = 0x00CC0020
-NULL = 0
-
 
 class Screenshot:
-    """PrintWindow 后台截图器"""
+    """DXGI 后台截图器（基于 dxcam）"""
 
     def __init__(self, window_title: str, window_class: Optional[str] = None):
         self.window_title = window_title
@@ -104,46 +26,60 @@ class Screenshot:
         self.hwnd: Optional[int] = None
         self._width: int = 0
         self._height: int = 0
+        self._camera = None
+        self._dxcam_imported = False
 
-    def _enum_windows_callback(self, hwnd, lparam):
-        if not user32.IsWindowVisible(hwnd):
+    def _import_dxcam(self) -> bool:
+        """延迟导入 dxcam，只在首次截图时加载"""
+        if self._dxcam_imported:
             return True
-        length = user32.GetWindowTextLengthW(hwnd) + 1
-        buf = ctypes.create_unicode_buffer(length)
-        user32.GetWindowTextW(hwnd, buf, length)
-        if buf.value and self.window_title.lower() in buf.value.lower():
-            self._hwnds.append(hwnd)
-        return True
+        try:
+            import dxcam
+            self._camera = dxcam.create(output_idx=0)
+            self._dxcam_imported = True
+            logger.info("dxcam 初始化成功")
+            return True
+        except ImportError:
+            logger.error("dxcam 未安装，请执行: pip install dxcam")
+            return False
+        except Exception as e:
+            logger.error(f"dxcam 初始化失败: {e}")
+            return False
 
     def find_window(self) -> bool:
-        callback_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
-        callback = callback_type(self._enum_windows_callback)
-        self._hwnds = []
-        user32.EnumWindows(callback, 0)
-        if self._hwnds:
-            self.hwnd = self._hwnds[0]
+        """通过窗口标题查找游戏窗口句柄"""
+        hwnd = win32gui.FindWindow(None, self.window_title)
+        if not hwnd:
+            # 模糊匹配：遍历所有可见窗口
+            def enum_cb(h, _):
+                if win32gui.IsWindowVisible(h):
+                    t = win32gui.GetWindowText(h)
+                    if self.window_title.lower() in t.lower():
+                        self.hwnd = h
+                        return False
+                return True
+            win32gui.EnumWindows(enum_cb, 0)
+
+        if self.hwnd:
             self._update_size()
-            # 输出匹配到的窗口
-            n = user32.GetWindowTextLengthW(self.hwnd) + 1
-            b = ctypes.create_unicode_buffer(n)
-            user32.GetWindowTextW(self.hwnd, b, n)
-            logger.info(f"找到窗口: \"{b.value}\" (hwnd={self.hwnd}) {self._width}x{self._height}")
-            if len(self._hwnds) > 1:
-                logger.warning(f"匹配到 {len(self._hwnds)} 个窗口，使用第一个")
+            title = win32gui.GetWindowText(self.hwnd)
+            logger.info(f"找到窗口: \"{title}\" (hwnd={self.hwnd}) {self._width}x{self._height}")
             return True
+
         logger.warning(f"未找到窗口: {self.window_title}")
         return False
 
     def reload_window(self) -> bool:
         """重新查找窗口（用于恢复丢失的窗口句柄）"""
         logger.info("重新查找窗口...")
+        self.hwnd = None
         return self.find_window()
 
     def _update_size(self):
-        rect = ctypes.wintypes.RECT()
-        user32.GetClientRect(self.hwnd, ctypes.byref(rect))
-        self._width = rect.right - rect.left
-        self._height = rect.bottom - rect.top
+        """更新窗口客户区尺寸"""
+        rect = win32gui.GetClientRect(self.hwnd)
+        self._width = rect[2] - rect[0]
+        self._height = rect[3] - rect[1]
 
     @property
     def width(self) -> int:
@@ -153,86 +89,45 @@ class Screenshot:
     def height(self) -> int:
         return self._height
 
-    def capture(self):
-        """截图 — PrintWindow 优先，失败则 BitBlt 屏幕截图回退
+    def capture(self) -> Optional[np.ndarray]:
+        """DXGI 截图 — 截取窗口客户区画面
 
         Returns:
-            OpenCV BGR numpy array，失败返回 None
+            OpenCV BGR numpy array (H, W, 3)，失败返回 None
         """
         if self.hwnd is None:
             return None
 
-        # 1. 尝试 PrintWindow
-        hdc_window = user32.GetWindowDC(self.hwnd)
-        hdc_mem = gdi32.CreateCompatibleDC(hdc_window)
-        hbitmap = gdi32.CreateCompatibleBitmap(hdc_window, self._width, self._height)
-        gdi32.SelectObject(hdc_mem, hbitmap)
-
-        success = user32.PrintWindow(self.hwnd, hdc_mem, PW_RENDERFULLCONTENT)
-        if not success:
-            success = user32.PrintWindow(self.hwnd, hdc_mem, 0)
-
-        if success:
-            pixel_data = self._get_pixels(hdc_mem, hbitmap)
-            gdi32.DeleteObject(hbitmap)
-            gdi32.DeleteDC(hdc_mem)
-            user32.ReleaseDC(self.hwnd, hdc_window)
-            if pixel_data is not None:
-                return pixel_data
-
-        gdi32.DeleteObject(hbitmap)
-        gdi32.DeleteDC(hdc_mem)
-        user32.ReleaseDC(self.hwnd, hdc_window)
-
-        # 2. PrintWindow 失败，回退 BitBlt 屏幕截图
-        logger.debug("PrintWindow 失败，回退 BitBlt")
-        return self._capture_bitblt()
-
-    def _get_pixels(self, hdc_mem, hbitmap):
-        """从内存 DC 读取像素数据 → BGR numpy array"""
-        bmp_info = BITMAPINFO()
-        bmp_info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
-        bmp_info.bmiHeader.biWidth = self._width
-        bmp_info.bmiHeader.biHeight = -self._height
-        bmp_info.bmiHeader.biPlanes = 1
-        bmp_info.bmiHeader.biBitCount = 32
-        bmp_info.bmiHeader.biCompression = BI_RGB
-
-        pixel_data = (ctypes.c_ubyte * (self._width * self._height * 4))()
-        lines = gdi32.GetDIBits(hdc_mem, hbitmap, 0, self._height,
-                                pixel_data, ctypes.byref(bmp_info), DIB_RGB_COLORS)
-        if lines == 0:
+        if not self._import_dxcam():
             return None
 
-        arr = np.frombuffer(pixel_data, dtype=np.uint8).reshape(self._height, self._width, 4)
-        return arr[:, :, :3].copy()
-
-    def _capture_bitblt(self):
-        """BitBlt 屏幕截图 — 需要窗口可见、不被遮挡"""
-        # 获取客户区在屏幕上的位置
-        pt = ctypes.wintypes.POINT(0, 0)
-        user32.ClientToScreen(self.hwnd, ctypes.byref(pt))
-        screen_x, screen_y = pt.x, pt.y
-
-        hdc_screen = user32.GetDC(NULL)
-        hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
-        hbitmap = gdi32.CreateCompatibleBitmap(hdc_screen, self._width, self._height)
-        gdi32.SelectObject(hdc_mem, hbitmap)
-
-        success = gdi32.BitBlt(hdc_mem, 0, 0, self._width, self._height,
-                               hdc_screen, screen_x, screen_y, SRCCOPY)
-
-        if not success:
-            gdi32.DeleteObject(hbitmap)
-            gdi32.DeleteDC(hdc_mem)
-            user32.ReleaseDC(NULL, hdc_screen)
-            logger.error("BitBlt 截图失败")
+        if self._camera is None:
+            logger.error("dxcam 未初始化")
             return None
 
-        pixel_data = self._get_pixels(hdc_mem, hbitmap)
+        # 获取窗口在屏幕上的位置（客户区）
+        try:
+            # 检查窗口是否最小化
+            if win32gui.IsIconic(self.hwnd):
+                logger.warning("窗口已最小化，无法截图")
+                return None
 
-        gdi32.DeleteObject(hbitmap)
-        gdi32.DeleteDC(hdc_mem)
-        user32.ReleaseDC(NULL, hdc_screen)
+            # 获取客户区在屏幕上的位置
+            pt = win32gui.ClientToScreen(self.hwnd, (0, 0))
+            left, top = pt
+            right = left + self._width
+            bottom = top + self._height
 
-        return pixel_data
+            frame = self._camera.grab(region=(left, top, right, bottom))
+            if frame is None:
+                logger.debug("dxcam 截图返回空")
+                return None
+
+            # dxcam 返回 RGB (H, W, 3)，转 BGR 给 OpenCV
+            if frame.shape[2] == 3:
+                return frame[:, :, ::-1].copy()  # RGB → BGR
+            return frame[:, :, :3].copy()
+
+        except Exception as e:
+            logger.error(f"截图失败: {e}")
+            return None
