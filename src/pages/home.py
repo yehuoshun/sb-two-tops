@@ -23,7 +23,7 @@ class HomePage(BasePage):
         return self.recognizer.count_icons_in_row(screenshot)
 
     def enter_dungeon(self, clicker):
-        """进入副本菜单"""
+        """进入副本菜单（按 L 键）"""
         _ = self.recognizer
-        # TODO: 填入实际坐标
-        logger.info("主城 → 进入副本菜单")
+        logger.info("主城 → 按 L 进入副本菜单")
+        clicker.press_key("L", down_time=0.1)
