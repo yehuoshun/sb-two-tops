@@ -17,7 +17,7 @@
 #### 2026-08-05 本轮完成
 - 截图引擎改为 **dxcam**（替代 PrintWindow），解决 DirectX 游戏黑屏问题
 - 战斗页检测：双模板匹配（"探险" + "当前轮次"），灰度二值化预处理
-- 自包含测试 `test/test_detect.py` — 4/4 全部通过（模板加载、合成匹配、噪声误报、纯色防误判）
+- 自包含测试 `test/test_detect.py` — 4/4 全部通过
 - 模板已部署：`templates/battle/battle_tanxian.png` + `battle_dangqianlunci.png`
 - 旧模板 `btn_exit.png` 已删除
 - `test/` 目录清理，旧测试文件已移除
@@ -33,7 +33,7 @@
 - [ ] 跑通全流程
 
 ### ⏳ Phase 3：打包（未开始）
-- PyInstaller 编译为 sihost.exe
+- PyCharm 编译为 sihost.exe
 - 使用文档
 
 ## 测试

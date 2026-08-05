@@ -38,7 +38,7 @@ D3D11_CREATE_DEVICE_BGRA_SUPPORT = 0x20
 D3D11_MAP_READ = 1
 
 # ── 结构体 ──
-class DXGI_OUTPUT_DESC(ctypes.Structure):
+class DxgiOutputDesc(ctypes.Structure):
     _fields_ = [
         ("DeviceName", ctypes.c_wchar * 32),
         ("DesktopCoordinates", ctypes.wintypes.RECT),
@@ -47,7 +47,7 @@ class DXGI_OUTPUT_DESC(ctypes.Structure):
         ("Monitor", ctypes.wintypes.HANDLE),
     ]
 
-class DXGI_OUTDUPL_FRAME_INFO(ctypes.Structure):
+class DxgiOutduplFrameInfo(ctypes.Structure):
     _fields_ = [
         ("LastPresentTime", ctypes.c_longlong),
         ("LastMouseUpdateTime", ctypes.c_longlong),
@@ -59,14 +59,14 @@ class DXGI_OUTDUPL_FRAME_INFO(ctypes.Structure):
         ("PointerShapeBufferSize", ctypes.c_uint),
     ]
 
-class D3D11_MAPPED_SUBRESOURCE(ctypes.Structure):
+class D3d11MappedSubresource(ctypes.Structure):
     _fields_ = [
         ("pData", ctypes.c_void_p),
         ("RowPitch", ctypes.c_uint),
         ("DepthPitch", ctypes.c_uint),
     ]
 
-class D3D11_TEXTURE2D_DESC(ctypes.Structure):
+class D3d11Texture2dDesc(ctypes.Structure):
     _fields_ = [
         ("Width", ctypes.c_uint), ("Height", ctypes.c_uint),
         ("MipLevels", ctypes.c_uint), ("ArraySize", ctypes.c_uint),
@@ -91,7 +91,7 @@ EO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 
 # IDXGIOutput::GetDesc
 GD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
-                               ctypes.POINTER(DXGI_OUTPUT_DESC))
+                               ctypes.POINTER(DxgiOutputDesc))
 
 # IDXGIOutput1::DuplicateOutput
 DO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
@@ -99,7 +99,7 @@ DO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 
 # IDXGIOutputDuplication::AcquireNextFrame
 ANF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
-                                ctypes.c_uint, ctypes.POINTER(DXGI_OUTDUPL_FRAME_INFO),
+                                ctypes.c_uint, ctypes.POINTER(DxgiOutduplFrameInfo),
                                 ctypes.POINTER(ctypes.c_void_p))
 
 # IDXGIOutputDuplication::ReleaseFrame
@@ -107,11 +107,11 @@ RF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p)
 
 # ID3D11Texture2D::GetDesc
 TD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
-                               ctypes.POINTER(D3D11_TEXTURE2D_DESC))
+                               ctypes.POINTER(D3d11Texture2dDesc))
 
 # ID3D11Device::CreateTexture2D
 CT2D_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
-                                 ctypes.POINTER(D3D11_TEXTURE2D_DESC),
+                                 ctypes.POINTER(D3d11Texture2dDesc),
                                  ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
 
 # ID3D11DeviceContext::CopySubresourceRegion
@@ -123,7 +123,7 @@ CSR_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 # ID3D11DeviceContext::Map
 MAP_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint,
-                                ctypes.c_uint, ctypes.POINTER(D3D11_MAPPED_SUBRESOURCE))
+                                ctypes.c_uint, ctypes.POINTER(D3d11MappedSubresource))
 
 # ID3D11DeviceContext::Unmap
 UNMAP_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
@@ -196,7 +196,7 @@ class DXGICapture:
             raise OSError(f"QueryInterface(IDXGIOutput1) 失败: 0x{hr & 0xFFFFFFFF:08X}")
 
         # 6. GetDesc
-        desc = DXGI_OUTPUT_DESC()
+        desc = DxgiOutputDesc()
         gd = _vtbl_call(output1, 7, GD_PROTO)
         gd(output1, ctypes.byref(desc))
         self._width = desc.DesktopCoordinates.right - desc.DesktopCoordinates.left
@@ -216,7 +216,7 @@ class DXGICapture:
         if self._duplication is None:
             return None
 
-        frame_info = DXGI_OUTDUPL_FRAME_INFO()
+        frame_info = DxgiOutduplFrameInfo()
         resource = ctypes.c_void_p()
 
         anf = _vtbl_call(self._duplication, 4, ANF_PROTO)
@@ -238,12 +238,12 @@ class DXGICapture:
             qi(resource, ctypes.byref(IID_ID3D11Texture2D), ctypes.byref(texture))
 
             # GetDesc
-            tex_desc = D3D11_TEXTURE2D_DESC()
+            tex_desc = D3d11Texture2dDesc()
             td = _vtbl_call(texture, 10, TD_PROTO)
             td(texture, ctypes.byref(tex_desc))
 
             # Create staging texture
-            staging_desc = D3D11_TEXTURE2D_DESC()
+            staging_desc = D3d11Texture2dDesc()
             staging_desc.Width = tex_desc.Width
             staging_desc.Height = tex_desc.Height
             staging_desc.MipLevels = 1
@@ -264,7 +264,7 @@ class DXGICapture:
             csr(self._context, staging, 0, 0, 0, 0, texture, 0, None)
 
             # Map
-            mapped = D3D11_MAPPED_SUBRESOURCE()
+            mapped = D3d11MappedSubresource()
             m = _vtbl_call(self._context, 14, MAP_PROTO)
             m(self._context, staging, 0, D3D11_MAP_READ, 0, ctypes.byref(mapped))
 
