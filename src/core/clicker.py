@@ -11,7 +11,7 @@ import ctypes
 import ctypes.wintypes
 import logging
 import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 logger = logging.getLogger("sb-two-tops.clicker")
 
