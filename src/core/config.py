@@ -55,7 +55,7 @@ class Config:
 
     @property
     def scale(self):
-        return (self._base_width, self._base_height)
+        return self._base_width, self._base_height
 
     @property
     def post_click_wait_ms(self) -> int:
