@@ -109,19 +109,21 @@ def test_synthetic_match():
     # 构建一张 1920x1080 黑底图
     frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-    # 从模板中选一个样本，贴到搜索区域内的随机位置
-    tpl = detector.templates.get("battle_tanxian")
-    if tpl is None:
-        print("⏭ 跳过（无 battle_tanxian 模板）")
-        return True
-
-    # 把模板贴到搜索区域中心
+    # 搜索区域
     sx = int(1920 * DETECT_CONFIG["battle"]["search_box"][0])
     sy = int(1080 * DETECT_CONFIG["battle"]["search_box"][1])
-    th, tw = tpl.shape
-    px = sx + 50
-    py = sy + 50
-    frame[py:py + th, px:px + tw] = cv2.cvtColor(tpl, cv2.COLOR_GRAY2BGR)
+
+    # 把所有模板都贴到搜索区域内，模拟真实场景
+    for feat_name in DETECT_CONFIG["battle"]["features"]:
+        tpl = detector.templates.get(feat_name)
+        if tpl is None:
+            print(f"⏭ 跳过（无 {feat_name} 模板）")
+            return True
+        th, tw = tpl.shape
+        # 按顺序排列，不重叠
+        px = sx + 50 + (200 if feat_name != DETECT_CONFIG["battle"]["features"][0] else 0)
+        py = sy + 50
+        frame[py:py + th, px:px + tw] = cv2.cvtColor(tpl, cv2.COLOR_GRAY2BGR)
 
     # 检测
     matched, results = detector.detect(frame, "battle")
