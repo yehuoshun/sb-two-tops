@@ -226,6 +226,53 @@ class Clicker:
         """向右移动（按住 D）"""
         self.hold_key("D", duration)
 
+    # ── 鼠标操作（游戏内攻击/瞄准，不移动坐标）──
+
+    def _mouse_down(self, button: str):
+        """发送鼠标按下消息（不移动坐标）"""
+        lparam = _make_lparam(0, 0)
+        if button == "left":
+            user32.PostMessageW(self.hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lparam)
+        else:
+            user32.PostMessageW(self.hwnd, WM_RBUTTONDOWN, 0, lparam)
+
+    def _mouse_up(self, button: str):
+        """发送鼠标松开消息"""
+        lparam = _make_lparam(0, 0)
+        if button == "left":
+            user32.PostMessageW(self.hwnd, WM_LBUTTONUP, 0, lparam)
+        else:
+            user32.PostMessageW(self.hwnd, WM_RBUTTONUP, 0, lparam)
+
+    def attack(self):
+        """攻击（左键单击）"""
+        self._mouse_down("left")
+        time.sleep(0.03)
+        self._mouse_up("left")
+        time.sleep(self.post_click_wait_ms / 1000.0)
+
+    def attack_heavy(self, duration: float = 0.5):
+        """重击/特殊攻击（按住左键）"""
+        self._mouse_down("left")
+        time.sleep(duration)
+        self._mouse_up("left")
+        time.sleep(self.post_click_wait_ms / 1000.0)
+
+    def aim(self):
+        """瞄准（右键单击，切换式瞄准）"""
+        self._mouse_down("right")
+        time.sleep(0.05)
+        self._mouse_up("right")
+        time.sleep(self.post_click_wait_ms / 1000.0)
+
+    def aim_hold(self, duration: float):
+        """按住右键瞄准"""
+        self._mouse_down("right")
+        time.sleep(duration)
+        self._mouse_up("right")
+
+    # ── 键盘快捷操作 ──
+
     def use_skill(self):
         """小技能 E"""
         self.press_key("E", down_time=0.03)
