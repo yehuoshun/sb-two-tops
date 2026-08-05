@@ -79,10 +79,14 @@ class Recognizer:
     @staticmethod
     def count_icons_in_row(frame, y_start=0.06, y_end=0.075,
                            x_start=0.65, x_end=0.98,
-                           threshold=130, min_count=6) -> bool:
-        """检测右上角图标行中的图标数量是否 >= min_count
+                           threshold=130) -> int:
+        """检测右上角图标行中的图标数量
 
-        用于主城页面检测：主城约8个图标，战斗页约4个。
+        用于页面区分：
+          主城 ~8 个
+          战斗 ~4 个
+          副本选择 ~2 个
+
         不受New标签和红点干扰（只检测图标下半部分）。
         """
         h, w = frame.shape[:2]
@@ -96,15 +100,11 @@ class Recognizer:
         v_proj = np.sum(binary > 0, axis=0)
         icon_pos = np.where(v_proj > 3)[0]
         if len(icon_pos) == 0:
-            return False
+            return 0
 
         gaps = np.diff(icon_pos)
         breaks = np.where(gaps > 5)[0]
-        groups = [icon_pos[0]]
-        for i in breaks:
-            groups.append(icon_pos[i + 1])
-
-        return len(groups) >= min_count
+        return len(breaks) + 1
 
     @staticmethod
     def match(
