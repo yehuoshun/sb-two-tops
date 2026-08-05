@@ -4,11 +4,12 @@
 单一职责：仅处理图像识别，不涉及点击或截图管理。
 """
 
-import cv2
-import numpy as np
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+import cv2
+import numpy as np
 
 logger = logging.getLogger("sb-two-tops.recognizer")
 

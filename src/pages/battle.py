@@ -15,10 +15,12 @@ class BattlePage(BasePage):
 
     def detect(self, screenshot: np.ndarray) -> bool:
         """检测是否在战斗中（双模板匹配：探险 + 当前轮次）"""
+        _ = self.recognizer  # PyCharm: 方法签名保留 self
         return self.recognizer.detect_page(screenshot, "battle")
 
     def use_skill(self, clicker, key_code: int):
         """释放技能"""
+        _ = self.recognizer  # PyCharm: 方法签名保留 self
         clicker.press_key(key_code)
         logger.info(f"释放技能 (key={key_code})")
 
@@ -28,11 +30,13 @@ class SettlementPage(BasePage):
 
     def detect(self, screenshot: np.ndarray) -> bool:
         """检测是否在结算页"""
+        _ = self.recognizer  # PyCharm: 方法签名保留 self
         _ = screenshot
         logger.warning("SettlementPage.detect 未实现")
         return False
 
     def click_continue(self, clicker):
         """点击继续挑战"""
+        _ = self.recognizer  # PyCharm: 方法签名保留 self
         _ = clicker
         logger.warning("SettlementPage.click_continue 未实现")
