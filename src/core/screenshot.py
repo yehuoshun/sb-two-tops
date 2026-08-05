@@ -12,7 +12,6 @@ from typing import Optional
 
 import numpy as np
 import win32gui
-import win32con
 
 logger = logging.getLogger("sb-two-tops.screenshot")
 
