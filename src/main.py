@@ -197,6 +197,7 @@ class SBAuto:
 
         except KeyboardInterrupt:
             logger.info("用户中断")
+        # noinspection PyBroadException
         except Exception:
             logger.exception("运行时异常")
         finally:
