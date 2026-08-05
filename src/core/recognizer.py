@@ -17,10 +17,16 @@ logger = logging.getLogger("sb-two-tops.recognizer")
 DETECT_CONFIG = {
     "battle": {
         "features": ["battle_tanxian", "battle_dangqianlunci"],
-        "search_box": (0.02, 0.20, 0.30, 0.18),  # x, y, w, h (相对比例)
+        "search_box": (0.02, 0.20, 0.30, 0.18),
         "threshold": 170,
         "match_threshold": 0.7,
-    }
+    },
+    "home": {
+        "features": ["home_track"],
+        "search_box": (0.0, 0.28, 0.15, 0.12),
+        "threshold": 170,
+        "match_threshold": 0.65,
+    },
 }
 
 
