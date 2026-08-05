@@ -265,15 +265,15 @@ class Clicker:
         self._mouse_up("left")
         time.sleep(self.post_click_wait_ms / 1000.0)
 
-    def aim(self):
-        """瞄准（右键单击，切换式瞄准）"""
+    def ranged_attack(self):
+        """远程武器攻击（右键单击）"""
         self._mouse_down("right")
-        time.sleep(0.05)
+        time.sleep(0.03)
         self._mouse_up("right")
         time.sleep(self.post_click_wait_ms / 1000.0)
 
-    def aim_hold(self, duration: float):
-        """按住右键瞄准"""
+    def ranged_attack_hold(self, duration: float):
+        """远程武器按住攻击"""
         self._mouse_down("right")
         time.sleep(duration)
         self._mouse_up("right")
