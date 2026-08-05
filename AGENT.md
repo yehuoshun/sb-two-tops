@@ -23,7 +23,7 @@
 
 | 层 | 技术 |
 |--------------|------------------------------------------------------------------|
-| 截图 | PrintWindow (GDI) — 后台截图，不依赖焦点 |
+| 截图 | DXGI (dxcam) — 后台截图，支持 DirectX 窗口 |
 | 视觉 | OpenCV 模板匹配 |
 | 点击 | PostMessage — 后台消息投递，不移动鼠标 |
 | 状态管理 | 页面识别器（Page pattern） |
@@ -31,7 +31,7 @@
 
 ## 依赖
 
-仅 3 个：`opencv-python` `numpy` `pywin32`
+仅 4 个：`opencv-python` `numpy` `pywin32` `dxcam`
 
 ## 代码结构
 
@@ -39,34 +39,34 @@
 .
 ├── config.json                    # 配置文件
 ├── requirements.txt               # 依赖
-├── agent.md                       # 本文件
+├── AGENT.md                       # 本文件
 ├── design.md                      # 设计文档
+├── progress.md                    # 开发进度
 ├── src/
 │   ├── main.py                    # 主入口
 │   ├── core/
-│   │   ├── screenshot.py          # PrintWindow 后台截图
+│   │   ├── screenshot.py          # DXGI (dxcam) 后台截图
 │   │   ├── recognizer.py          # OpenCV 模板匹配
 │   │   ├── clicker.py             # PostMessage 后台点击/键盘
 │   │   └── config.py              # JSON 配置 + 坐标缩放
 │   └── pages/
 │       ├── base.py                # 页面基类（抽象）
-│       ├── home.py                # 主城页面（TEMPLATE + SEARCH_REGION）
+│       ├── home.py                # 主城页面
 │       ├── dungeon.py             # 副本选择/确认
-│       └── battle.py              # 战斗/结算（TEMPLATE + SEARCH_REGION）
+│       └── battle.py              # 战斗/结算
 ├── test/
-│   ├── test_capture.py            # 截图测试脚本
-│   ├── crop_template.py           # 交互式模板裁剪
-│   └── test_match.py              # 模板匹配验证
+│   └── test_detect.py             # 页面检测自包含测试
 └── templates/                     # UI 特征图模板
     └── battle/
-        └── btn_exit.png           # 战斗页退出按钮（12x33）
+        ├── battle_tanxian.png     # "探险" 文字模板
+        └── battle_dangqianlunci.png  # "当前轮次" 文字模板
 ```
 
 ## 核心架构
 
 ### 主循环
 ```
-截图(PrintWindow) → 模板匹配识别页面 → 决策 → 操作(PostMessage) → 循环
+截图(dxcam) → 模板匹配识别页面 → 决策 → 操作(PostMessage) → 循环
 ```
 
 ### 状态流转
@@ -149,4 +149,4 @@ for root, dirs, files in os.walk('src'):
 
 ## 关键词
 
-两个陀螺, RPA, 自动化, 图像识别, Python, OpenCV, PrintWindow, PostMessage
+两个陀螺, RPA, 自动化, 图像识别, Python, OpenCV, dxcam, PostMessage
