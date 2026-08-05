@@ -78,6 +78,7 @@ class D3d11Texture2dDesc(ctypes.Structure):
 
 # ── COM 函数原型 ──
 # IUnknown
+# noinspection PyTypeChecker
 QI_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                ctypes.POINTER(GUID), ctypes.POINTER(ctypes.c_void_p))
 
@@ -89,6 +90,7 @@ EA1_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 EO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p))
 
+# noinspection PyTypeChecker
 # IDXGIOutput::GetDesc
 GD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                ctypes.POINTER(DxgiOutputDesc))
@@ -97,6 +99,7 @@ GD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 DO_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
 
+# noinspection PyTypeChecker
 # IDXGIOutputDuplication::AcquireNextFrame
 ANF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_uint, ctypes.POINTER(DxgiOutduplFrameInfo),
@@ -105,10 +108,12 @@ ANF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
 # IDXGIOutputDuplication::ReleaseFrame
 RF_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p)
 
+# noinspection PyTypeChecker
 # ID3D11Texture2D::GetDesc
 TD_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                ctypes.POINTER(D3d11Texture2dDesc))
 
+# noinspection PyTypeChecker
 # ID3D11Device::CreateTexture2D
 CT2D_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                  ctypes.POINTER(D3d11Texture2dDesc),
@@ -120,6 +125,7 @@ CSR_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
                                 ctypes.c_uint)
 
+# noinspection PyTypeChecker
 # ID3D11DeviceContext::Map
 MAP_PROTO = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p,
                                 ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint,
