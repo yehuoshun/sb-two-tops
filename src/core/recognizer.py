@@ -78,7 +78,7 @@ class Recognizer:
         result = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
         if max_val >= threshold:
-            return (max_loc[0], max_loc[1], float(max_val))
+            return max_loc[0], max_loc[1], float(max_val)
         return None
 
     def match_in_region(
@@ -91,7 +91,7 @@ class Recognizer:
         result = self.match(roi, template, threshold)
         if result:
             cx, cy, conf = result
-            return (cx + rx, cy + ry, conf)
+            return cx + rx, cy + ry, conf
         return None
 
     def detect_page(self, frame: np.ndarray, page_name: str) -> bool:
