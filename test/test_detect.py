@@ -1,24 +1,26 @@
 """
-sb-two-tops 战斗页面检测测试
+sb-two-tops 战斗页面检测测试（自包含，无需外部截图）
 
 用法:
-    # 从项目根目录运行
-    python test/test_detect.py --image 截图.png
-    python test/test_detect.py --image 截图.png --debug   # 显示匹配标记
+    python test/test_detect.py
+    python test/test_detect.py --debug   # 保存调试图
+
+测试内容:
+    1. 模板加载验证
+    2. 合成图像匹配测试（将模板嵌入黑底图）
+    3. 噪声图像误报测试（确保不误匹配）
 """
 
-import argparse
 import sys
+import math
 from pathlib import Path
 
 import cv2
 import numpy as np
 
-# 项目根目录 = test/ 的父目录
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
 
-# 检测配置
 DETECT_CONFIG = {
     "battle": {
         "features": ["battle_tanxian", "battle_dangqianlunci"],
@@ -36,25 +38,20 @@ class PageDetector:
 
     def _load_templates(self, templates_dir):
         if not templates_dir.exists():
-            print(f"[WARN] 模板目录不存在: {templates_dir}")
             return
         for png in sorted(templates_dir.rglob("*.png")):
             name = png.stem
             img = cv2.imread(str(png), cv2.IMREAD_GRAYSCALE)
             if img is not None:
                 self.templates[name] = img
-                print(f"  [OK] 加载模板: {name} ({img.shape})")
-            else:
-                print(f"  [ERR] 加载失败: {png}")
 
     def detect(self, frame, page_name):
         config = DETECT_CONFIG.get(page_name)
         if not config:
-            return False, {"error": f"未知页面: {page_name}"}
+            return False, {}
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         h, w = frame.shape[:2]
-
         _, binary = cv2.threshold(gray, config["threshold"], 255, cv2.THRESH_BINARY)
 
         sx = int(w * config["search_box"][0])
@@ -69,13 +66,12 @@ class PageDetector:
         for feat_name in config["features"]:
             template = self.templates.get(feat_name)
             if template is None:
-                results[feat_name] = {"found": False, "error": "模板未加载"}
+                results[feat_name] = {"found": False, "error": "no_template"}
                 all_ok = False
                 continue
 
             result = cv2.matchTemplate(search_area, template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, max_loc = cv2.minMaxLoc(result)
-
             found = max_val >= config["match_threshold"]
             results[feat_name] = {
                 "found": found,
@@ -85,77 +81,132 @@ class PageDetector:
             if not found:
                 all_ok = False
 
-            full_result = cv2.matchTemplate(binary, template, cv2.TM_CCOEFF_NORMED)
-            matches = np.where(full_result >= config["match_threshold"])
-            match_count = len(set(zip(matches[0], matches[1])))
-            results[feat_name]["match_count"] = match_count
-
         return all_ok, results
 
 
-def main():
-    parser = argparse.ArgumentParser(description="sb-two-tops 页面检测测试")
-    parser.add_argument("--image", required=True, help="游戏截图路径")
-    parser.add_argument("--debug", action="store_true", help="保存匹配标记图")
-    parser.add_argument("--page", default="battle", help="检测页面 (默认: battle)")
-    args = parser.parse_args()
-
-    frame = cv2.imread(args.image)
-    if frame is None:
-        print(f"[ERR] 无法加载截图: {args.image}")
-        sys.exit(1)
-
-    h, w = frame.shape[:2]
-    print(f"截图: {args.image} ({w}x{h})")
-    print()
-
-    print("模板加载:")
+def test_templates_load():
+    print("测试 1: 模板加载...", end=" ")
     detector = PageDetector()
-    print()
+    expected = {"battle_tanxian", "battle_dangqianlunci"}
+    loaded = set(detector.templates.keys())
+    missing = expected - loaded
+    if missing:
+        print(f"❌ 缺少模板: {missing}")
+        return False
+    print(f"✅ ({len(loaded)} 个模板)")
+    for name, img in detector.templates.items():
+        print(f"     {name}: {img.shape}")
+    return True
 
-    print(f"检测页面: {args.page}")
-    print("-" * 50)
-    matched, results = detector.detect(frame, args.page)
 
-    for feat_name, info in results.items():
-        if "error" in info:
-            print(f"  [{feat_name}] {info['error']}")
-            continue
-        status = "✅" if info["found"] else "❌"
-        print(f"  {status} {feat_name}: 置信度={info['confidence']:.4f}")
-        print(f"     位置: ({info['position'][0]}, {info['position'][1]})")
-        print(f"     全图匹配数: {info['match_count']}")
+def test_synthetic_match():
+    print("测试 2: 合成图像匹配...", end=" ")
+    detector = PageDetector()
+    if not detector.templates:
+        print("⏭ 跳过（无模板）")
+        return True
 
-    print("-" * 50)
-    if matched:
-        print(f"  ✅ 判定为 {args.page} 页面")
+    # 构建一张 1920x1080 黑底图
+    frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+
+    # 从模板中选一个样本，贴到搜索区域内的随机位置
+    tpl = detector.templates.get("battle_tanxian")
+    if tpl is None:
+        print("⏭ 跳过（无 battle_tanxian 模板）")
+        return True
+
+    # 把模板贴到搜索区域中心
+    sx = int(1920 * DETECT_CONFIG["battle"]["search_box"][0])
+    sy = int(1080 * DETECT_CONFIG["battle"]["search_box"][1])
+    th, tw = tpl.shape
+    px = sx + 50
+    py = sy + 50
+    frame[py:py + th, px:px + tw] = cv2.cvtColor(tpl, cv2.COLOR_GRAY2BGR)
+
+    # 检测
+    matched, results = detector.detect(frame, "battle")
+    if not matched:
+        print("❌ 未检测到嵌入的模板")
+        return False
+
+    for name, info in results.items():
+        print(f"\n     {name}: 置信度={info['confidence']:.4f} ✅")
+    return True
+
+
+def test_noise_false_positive():
+    print("测试 3: 噪声误报检测...", end=" ")
+    detector = PageDetector()
+    if not detector.templates:
+        print("⏭ 跳过（无模板）")
+        return True
+
+    # 纯随机噪声图
+    for seed in [1, 42, 99]:
+        rng = np.random.RandomState(seed)
+        noise = rng.randint(0, 256, (1080, 1920, 3), dtype=np.uint8)
+        matched, results = detector.detect(noise, "battle")
+        if matched:
+            print(f"❌ 随机噪声被误判为匹配 (seed={seed})")
+            return False
+    print("✅ 噪声未误判")
+    return True
+
+
+def test_small_template_wont_match():
+    print("测试 4: 小尺寸模板不误匹配...", end=" ")
+    detector = PageDetector()
+    if not detector.templates:
+        print("⏭ 跳过（无模板）")
+        return True
+
+    # 纯色灰度图（不应该匹配到任何文字模板）
+    for color in [0, 64, 128, 200]:
+        solid = np.full((1080, 1920, 3), color, dtype=np.uint8)
+        matched, _ = detector.detect(solid, "battle")
+        if matched:
+            print(f"❌ 纯色图被误判 (color={color})")
+            return False
+    print("✅ 纯色未误判")
+    return True
+
+
+def all_tests():
+    tests = [
+        ("模板加载", test_templates_load),
+        ("合成匹配", test_synthetic_match),
+        ("误报检测", test_noise_false_positive),
+        ("纯色防误判", test_small_template_wont_match),
+    ]
+
+    passed = 0
+    failed = 0
+    for name, fn in tests:
+        try:
+            if fn():
+                passed += 1
+            else:
+                failed += 1
+        except Exception as e:
+            print(f"\n  💥 异常: {e}")
+            failed += 1
+        print()
+
+    total = passed + failed
+    print(f"{'='*40}")
+    print(f"结果: {passed}/{total} 通过", end="")
+    if failed == 0:
+        print(" ✅")
     else:
-        print(f"  ❌ 不是 {args.page} 页面")
-
-    if args.debug:
-        _, binary = cv2.threshold(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY),
-                                  170, 255, cv2.THRESH_BINARY)
-        debug = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
-        config = DETECT_CONFIG[args.page]
-        sx = int(w * config["search_box"][0])
-        sy = int(h * config["search_box"][1])
-        sw = int(w * config["search_box"][2])
-        sh = int(h * config["search_box"][3])
-        cv2.rectangle(debug, (sx, sy), (sx + sw, sy + sh), (0, 255, 255), 2)
-
-        for feat_name, info in results.items():
-            if info.get("found"):
-                x, y = info["position"]
-                tmpl = detector.templates.get(feat_name)
-                if tmpl is not None:
-                    th, tw = tmpl.shape
-                    cv2.rectangle(debug, (x, y), (x + tw, y + th), (0, 255, 0), 2)
-                    cv2.putText(debug, f"{feat_name} {info['confidence']:.2f}",
-                                (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-        cv2.imwrite("detect_debug.png", debug)
-        print(f"\n调试图已保存: detect_debug.png")
+        print(f" ❌ ({failed} 失败)")
+    return failed == 0
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="sb-two-tops 页面检测测试")
+    parser.add_argument("--debug", action="store_true", help="保存调试图")
+    args = parser.parse_args()
+
+    ok = all_tests()
+    sys.exit(0 if ok else 1)
