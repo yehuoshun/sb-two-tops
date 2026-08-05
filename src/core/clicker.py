@@ -322,5 +322,5 @@ class Clicker:
         for key_name in list(self._held_keys.keys()):
             try:
                 self.key_up(key_name)
-            except Exception:
+            except ValueError:
                 pass
