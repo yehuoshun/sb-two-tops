@@ -20,10 +20,13 @@ WM_LBUTTONDOWN = 0x0201
 WM_LBUTTONUP = 0x0202
 WM_RBUTTONDOWN = 0x0204
 WM_RBUTTONUP = 0x0205
+WM_MBUTTONDOWN = 0x0207
+WM_MBUTTONUP = 0x0208
 WM_MOUSEMOVE = 0x0200
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 MK_LBUTTON = 0x0001
+MK_MBUTTON = 0x0010
 
 # ---------- 虚拟键码 ----------
 VK = {
@@ -233,16 +236,20 @@ class Clicker:
         lparam = _make_lparam(0, 0)
         if button == "left":
             user32.PostMessageW(self.hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lparam)
-        else:
+        elif button == "right":
             user32.PostMessageW(self.hwnd, WM_RBUTTONDOWN, 0, lparam)
+        elif button == "middle":
+            user32.PostMessageW(self.hwnd, WM_MBUTTONDOWN, MK_MBUTTON, lparam)
 
     def _mouse_up(self, button: str):
         """发送鼠标松开消息"""
         lparam = _make_lparam(0, 0)
         if button == "left":
             user32.PostMessageW(self.hwnd, WM_LBUTTONUP, 0, lparam)
-        else:
+        elif button == "right":
             user32.PostMessageW(self.hwnd, WM_RBUTTONUP, 0, lparam)
+        elif button == "middle":
+            user32.PostMessageW(self.hwnd, WM_MBUTTONUP, 0, lparam)
 
     def attack(self):
         """攻击（左键单击）"""
@@ -270,6 +277,13 @@ class Clicker:
         self._mouse_down("right")
         time.sleep(duration)
         self._mouse_up("right")
+
+    def lock_target(self):
+        """锁定目标（中键单击）"""
+        self._mouse_down("middle")
+        time.sleep(0.03)
+        self._mouse_up("middle")
+        time.sleep(self.post_click_wait_ms / 1000.0)
 
     # ── 键盘快捷操作 ──
 
