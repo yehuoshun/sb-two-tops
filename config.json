@@ -7,7 +7,7 @@
     "post_click_wait_ms": 500
   },
   "dungeon": {
-    "target": "探险",
+    "target": "扼守",
     "max_runs": 0
   },
   "log": {

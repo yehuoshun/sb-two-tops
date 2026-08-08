@@ -43,12 +43,12 @@ class SBAuto:
         self.state = PageState.UNKNOWN
         self.run_count = 0
         self.max_runs = self.config.get("dungeon", "max_runs", default=0)
-        self.target = self.config.get("dungeon", "target", default="探险")
+        self.target = self.config.get("dungeon", "target", default="扼守")
         self._start_time = time.time()
         self._loading_start = 0
         self._dungeon_start = 0
-        self._unknown_count = 0  # 连续未知状态计数
-        self._max_unknown = 10   # 连续未知超过此值则尝试恢复
+        self._unknown_count = 0
+        self._max_unknown = 10
 
     def _init_logging(self):
         level = getattr(logging, self.config.get("log", "level", default="INFO").upper(), logging.INFO)
@@ -84,24 +84,39 @@ class SBAuto:
         logger.info("初始化完成")
 
     def _capture(self):
-        img = self.screenshot.capture()
-        return img
+        return self.screenshot.capture()
 
     def _identify(self, screenshot) -> PageState:
-        if self.home.detect(screenshot):
-            return PageState.HOME
-        if self.settlement.detect(screenshot):
+        flags = {}  # 用于调试日志
+
+        # 结算页（OCR 优先，因为模板匹配未实现）
+        if self.settlement.detect_ocr(self.ocr, screenshot):
+            flags["settlement"] = True
             return PageState.SETTLEMENT
+
+        if self.home.detect(screenshot):
+            flags["home"] = True
+            return PageState.HOME
+
         if self.battle.detect(screenshot):
+            flags["battle"] = True
             return PageState.IN_DUNGEON
-        if self.confirm.detect(screenshot):
+
+        # 确认页（OCR）
+        if self.confirm.detect_ocr(self.ocr, screenshot):
+            flags["confirm"] = True
             return PageState.CONFIRM
+
         if self.dungeon_select.detect(screenshot):
+            flags["dungeon_select"] = True
             return PageState.DUNGEON_SELECT
+
+        if flags:
+            logger.debug(f"识别结果: {flags}")
+
         return PageState.UNKNOWN
 
     def _on_state_change(self, new_state: PageState):
-        """状态切换回调 — 重置卡死计数器"""
         if new_state != PageState.UNKNOWN:
             self._unknown_count = 0
         if new_state != self.state:
@@ -111,56 +126,81 @@ class SBAuto:
     def _handle_home(self, screenshot):
         logger.info("主城 — 前往副本")
         self.home.enter_dungeon(self.clicker)
+        self.dungeon_select.reset_scroll()
         time.sleep(2)
 
     def _handle_dungeon_select(self, screenshot):
         logger.info(f"副本选择 — 选择 {self.target}")
         ok = self.dungeon_select.select_dungeon(self.ocr, self.clicker, screenshot, self.target)
-        if not ok:
-            # 需要滚动后重试，等主循环下次截图
-            time.sleep(1.5)
+        if ok:
+            time.sleep(1.5)  # 等待确认页弹出
+        else:
+            time.sleep(1.5)  # 刚滚动过，等画面稳定
 
     def _handle_confirm(self, screenshot):
-        logger.info("确认进入副本")
-        self.confirm.confirm(self.clicker)
-        self._loading_start = time.time()
+        ok = self.confirm.confirm(self.ocr, self.clicker, screenshot)
+        if ok:
+            self._loading_start = time.time()
+            logger.info("确认进入副本，等待加载")
+        else:
+            logger.warning("确认按钮未找到，尝试点击画面中央下方")
+            self.clicker.click(960, 800)
+            self._loading_start = time.time()
         time.sleep(2)
 
     def _handle_loading(self):
         elapsed = time.time() - self._loading_start
         if elapsed > 30:
-            logger.warning("加载超时")
+            logger.warning("加载超时（30s），可能已卡住")
         else:
             logger.info(f"加载中... ({elapsed:.0f}s)")
 
     def _handle_unknown(self, screenshot):
-        """未知状态处理 — 连续未知超过阈值则尝试恢复"""
         self._unknown_count += 1
         if self._unknown_count >= self._max_unknown:
             logger.warning(f"连续未知 {self._unknown_count} 次，尝试恢复窗口")
             if self.screenshot.reload_window():
                 logger.info("窗口重新定位成功")
             else:
-                logger.error("无法找到游戏窗口，等待重试")
+                logger.error("无法找到游戏窗口")
             self._unknown_count = 0
 
     def _handle_battle(self, screenshot):
         if self._dungeon_start == 0:
             self._dungeon_start = time.time()
-        # 按 Q 大招
+            logger.info("战斗开始")
+
+        # 释放 Q 技能
         self.clicker.press_key(VK_Q)
         elapsed = time.time() - self._dungeon_start
-        logger.info(f"战斗中... ({elapsed:.0f}s) 释放大招 Q")
+        logger.info(f"战斗中... ({elapsed:.0f}s) 释放 Q")
+
+        # 战斗超时保护
+        if elapsed > 180:
+            logger.warning("战斗超时（3分钟），怀疑卡住")
+            # 尝试按ESC跳过
+            self.clicker.press_key(0x1B)  # VK_ESCAPE
+            self._dungeon_start = 0
+            time.sleep(3)
+
         time.sleep(2)
 
     def _handle_settlement(self, screenshot):
         self._dungeon_start = 0
         self.run_count += 1
-        logger.info(f"结算 — 第 {self.run_count} 次完成")
+        elapsed = time.time() - self._start_time
+        logger.info(f"🎉 第 {self.run_count} 次完成，已运行 {elapsed:.0f}s")
+
         if self.max_runs > 0 and self.run_count >= self.max_runs:
             logger.info(f"达到最大次数 {self.max_runs}，停止")
             return False
-        self.settlement.click_continue(self.clicker)
+
+        ok = self.settlement.click_continue(self.ocr, self.clicker, screenshot)
+        if not ok:
+            logger.warning("结算按钮未找到，尝试点击画面中央")
+            self.clicker.click(960, 600)
+            time.sleep(1)
+            self.clicker.click(960, 800)
         time.sleep(2)
         return True
 
@@ -201,7 +241,6 @@ class SBAuto:
 
         except KeyboardInterrupt:
             logger.info("用户中断")
-        # noinspection PyBroadException
         except Exception:
             logger.exception("运行时异常")
         finally:
