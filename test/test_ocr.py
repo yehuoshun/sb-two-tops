@@ -70,10 +70,9 @@ def test_ocr(image, debug=False):
             ys = [p[1] for p in box]
             cx = int(sum(xs) / len(xs))
             cy = int(sum(ys) / len(ys))
-
-        for t in TARGETS + EXTRA_TARGETS:
-            if t in text and t not in found:
-                found[t] = (cx, cy, score)
+            for t in TARGETS + EXTRA_TARGETS:
+                if t in text and t not in found:
+                    found[t] = (cx, cy, score)
 
     # 目标副本
     print("=== 目标副本 ===")
