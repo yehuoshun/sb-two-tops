@@ -4,7 +4,7 @@
     "window_class": null,
     "screen_width": 1920,
     "screen_height": 1080,
-    "post_click_wait_ms": 500
+    "post_click_wait_ms": 200
   },
   "dungeon": {
     "target": "扼守",

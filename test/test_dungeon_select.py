@@ -135,7 +135,7 @@ def main():
             print(f"✅ 点击 {target} 成功！")
             break
         print("滚动中...")
-        time.sleep(1.5)
+        time.sleep(0.5)
     else:
         print(f"\n❌ 滚动 {max_attempts} 次未找到 {target}")
         sys.exit(1)
