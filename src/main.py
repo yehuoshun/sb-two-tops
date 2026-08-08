@@ -13,11 +13,14 @@ from enum import Enum, auto
 from src.core.config import Config
 from src.core.screenshot import Screenshot
 from src.core.recognizer import Recognizer
-from src.core.clicker import Clicker
+from src.core.clicker import MouseClicker
+from src.core.keyboard import Keyboard
 from src.core.ocr import OCR
+from src.core.game_controller import GameController
 from src.pages.home import HomePage
-from src.pages.dungeon import DungeonSelectPage, ConfirmPage
-from src.pages.battle import BattlePage, SettlementPage
+from src.pages.dungeon import DungeonSelectPage
+from src.pages.battle import BattlePage
+from src.dungeons import get_dungeon
 
 logger = logging.getLogger("sb-two-tops.main")
 
@@ -32,9 +35,6 @@ class PageState(Enum):
     SETTLEMENT = auto()
 
 
-VK_Q = 0x51
-
-
 class SBAuto:
     def __init__(self, config_path: str = "config.json"):
         self.config = Config(config_path)
@@ -46,7 +46,6 @@ class SBAuto:
         self.target = self.config.get("dungeon", "target", default="扼守")
         self._start_time = time.time()
         self._loading_start = 0
-        self._dungeon_start = 0
         self._unknown_count = 0
         self._max_unknown = 10
 
@@ -69,17 +68,26 @@ class SBAuto:
 
         self.recognizer = Recognizer()
         self.ocr = OCR()
-        self.clicker = Clicker(
+
+        self.mouse = MouseClicker(
             hwnd=self.screenshot.hwnd,
             post_click_wait_ms=self.config.post_click_wait_ms,
         )
+        self.keyboard = Keyboard(
+            hwnd=self.screenshot.hwnd,
+            post_click_wait_ms=self.config.post_click_wait_ms,
+        )
+        self.controller = GameController(self.mouse, self.keyboard)
 
         cfg = self.config.data
         self.home = HomePage(self.recognizer, cfg)
         self.dungeon_select = DungeonSelectPage(self.recognizer, cfg)
-        self.confirm = ConfirmPage(self.recognizer, cfg)
         self.battle = BattlePage(self.recognizer, cfg)
-        self.settlement = SettlementPage(self.recognizer, cfg)
+
+        # 加载目标副本
+        DungeonCls = get_dungeon(self.target)
+        self.dungeon = DungeonCls(self.ocr, self.controller)
+        logger.info(f"目标副本: {self.target}")
 
         logger.info("初始化完成")
 
@@ -87,32 +95,21 @@ class SBAuto:
         return self.screenshot.capture()
 
     def _identify(self, screenshot) -> PageState:
-        flags = {}  # 用于调试日志
-
-        # 结算页（OCR 优先，因为模板匹配未实现）
-        if self.settlement.detect_ocr(self.ocr, screenshot):
-            flags["settlement"] = True
+        # 结算页 OCR 优先
+        if self.dungeon.is_settlement_page(screenshot):
             return PageState.SETTLEMENT
 
         if self.home.detect(screenshot):
-            flags["home"] = True
             return PageState.HOME
 
         if self.battle.detect(screenshot):
-            flags["battle"] = True
             return PageState.IN_DUNGEON
 
-        # 确认页（OCR）
-        if self.confirm.detect_ocr(self.ocr, screenshot):
-            flags["confirm"] = True
+        if self.dungeon.is_confirm_page(screenshot):
             return PageState.CONFIRM
 
         if self.dungeon_select.detect(screenshot):
-            flags["dungeon_select"] = True
             return PageState.DUNGEON_SELECT
-
-        if flags:
-            logger.debug(f"识别结果: {flags}")
 
         return PageState.UNKNOWN
 
@@ -124,36 +121,35 @@ class SBAuto:
             self.state = new_state
 
     def _handle_home(self, screenshot):
-        logger.info("主城 — 前往副本")
-        self.home.enter_dungeon(self.clicker)
-        self.dungeon_select.reset_scroll()
+        logger.info("主城 → 前往副本")
+        self.home.enter_dungeon(self.controller)
+        self.dungeon.reset_scroll()
         time.sleep(2)
 
     def _handle_dungeon_select(self, screenshot):
-        logger.info(f"副本选择 — 选择 {self.target}")
-        ok = self.dungeon_select.select_dungeon(self.ocr, self.clicker, screenshot, self.target)
+        logger.info(f"副本选择 → 选择 {self.target}")
+        ok = self.dungeon.select(screenshot)
         if ok:
-            time.sleep(1.5)  # 等待确认页弹出
+            time.sleep(1.5)
         else:
-            time.sleep(1.5)  # 刚滚动过，等画面稳定
+            time.sleep(1.5)
 
     def _handle_confirm(self, screenshot):
-        ok = self.confirm.confirm(self.ocr, self.clicker, screenshot)
+        ok = self.dungeon.confirm(screenshot)
         if ok:
             self._loading_start = time.time()
-            logger.info("确认进入副本，等待加载")
+            logger.info("确认进入，等待加载")
         else:
-            logger.warning("确认按钮未找到，尝试点击画面中央下方")
-            self.clicker.click(960, 800)
+            logger.warning("确认按钮未找到，点击画面中央")
+            self.controller.click(960, 800)
             self._loading_start = time.time()
         time.sleep(2)
 
     def _handle_loading(self):
         elapsed = time.time() - self._loading_start
         if elapsed > 30:
-            logger.warning("加载超时（30s），可能已卡住")
-        else:
-            logger.info(f"加载中... ({elapsed:.0f}s)")
+            logger.warning("加载超时（30s）")
+        logger.info(f"加载中... ({elapsed:.0f}s)")
 
     def _handle_unknown(self, screenshot):
         self._unknown_count += 1
@@ -161,32 +157,14 @@ class SBAuto:
             logger.warning(f"连续未知 {self._unknown_count} 次，尝试恢复窗口")
             if self.screenshot.reload_window():
                 logger.info("窗口重新定位成功")
-            else:
-                logger.error("无法找到游戏窗口")
             self._unknown_count = 0
 
     def _handle_battle(self, screenshot):
-        if self._dungeon_start == 0:
-            self._dungeon_start = time.time()
-            logger.info("战斗开始")
-
-        # 释放 Q 技能
-        self.clicker.press_key(VK_Q)
-        elapsed = time.time() - self._dungeon_start
-        logger.info(f"战斗中... ({elapsed:.0f}s) 释放 Q")
-
-        # 战斗超时保护
-        if elapsed > 180:
-            logger.warning("战斗超时（3分钟），怀疑卡住")
-            # 尝试按ESC跳过
-            self.clicker.press_key(0x1B)  # VK_ESCAPE
-            self._dungeon_start = 0
-            time.sleep(3)
-
-        time.sleep(2)
+        logger.info("战斗开始")
+        self.dungeon.battle()
+        logger.info("战斗结束")
 
     def _handle_settlement(self, screenshot):
-        self._dungeon_start = 0
         self.run_count += 1
         elapsed = time.time() - self._start_time
         logger.info(f"🎉 第 {self.run_count} 次完成，已运行 {elapsed:.0f}s")
@@ -195,12 +173,12 @@ class SBAuto:
             logger.info(f"达到最大次数 {self.max_runs}，停止")
             return False
 
-        ok = self.settlement.click_continue(self.ocr, self.clicker, screenshot)
+        ok = self.dungeon.settlement(screenshot)
         if not ok:
             logger.warning("结算按钮未找到，尝试点击画面中央")
-            self.clicker.click(960, 600)
+            self.controller.click(960, 600)
             time.sleep(1)
-            self.clicker.click(960, 800)
+            self.controller.click(960, 800)
         time.sleep(2)
         return True
 
