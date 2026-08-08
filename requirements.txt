@@ -2,4 +2,7 @@ opencv-python>=4.9.0
 numpy>=2.5.1
 pywin32>=312
 dxcam>=0.1.0
+# OCR 引擎（二选一）
+# rapidocr-onnxruntime — 轻量，但 Windows Python 3.13 可能缺 wheel
+# easyocr          — 稍重，但 Python 3.13 支持好
 rapidocr-onnxruntime
