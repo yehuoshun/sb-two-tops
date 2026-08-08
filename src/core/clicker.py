@@ -23,7 +23,7 @@ from src.core.constants import (
 
 logger = logging.getLogger("sb-two-tops.clicker")
 
-user32 = ctypes.windll.user32
+user32: ctypes.WinDLL = ctypes.windll.user32
 user32.PostMessageW.argtypes = [
     ctypes.wintypes.HWND, ctypes.wintypes.UINT,
     ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM,
