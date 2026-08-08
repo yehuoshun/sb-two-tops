@@ -1,13 +1,13 @@
 """
-扼守副本 — 专属配置
+Guard — 扼守 dungeon config
 
-继承 BaseDungeon，只需配置参数，无需重写逻辑。
+Inherits BaseDungeon, only needs params, no logic overrides.
 """
 
 from src.dungeons.base import BaseDungeon
 
 
-class Dungeon扼守(BaseDungeon):
+class DungeonGuard(BaseDungeon):
     name = "扼守"
     max_scroll = 5
     scroll_delta = -120

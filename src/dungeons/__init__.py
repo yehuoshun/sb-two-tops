@@ -2,12 +2,12 @@
 副本模块注册表 — 按名称查找副本类
 """
 
-from src.dungeons.扼守 import Dungeon扼守
-from src.dungeons.探险 import Dungeon探险
+from src.dungeons.guard import DungeonGuard
+from src.dungeons.explore import DungeonExplore
 
 _DUNGEON_MAP = {
-    "扼守": Dungeon扼守,
-    "探险": Dungeon探险,
+    "扼守": DungeonGuard,
+    "探险": DungeonExplore,
 }
 
 

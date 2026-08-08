@@ -1,11 +1,13 @@
 """
-探险副本 — 专属配置
+Explore — 探险 dungeon config
+
+Inherits BaseDungeon, only needs params, no logic overrides.
 """
 
 from src.dungeons.base import BaseDungeon
 
 
-class Dungeon探险(BaseDungeon):
+class DungeonExplore(BaseDungeon):
     name = "探险"
     max_scroll = 3
     scroll_delta = -120
