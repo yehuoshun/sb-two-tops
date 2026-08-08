@@ -6,6 +6,8 @@
 2. 检测副本选择页 → 滚动找扼守 → 点击
 3. 检测难度选择页 → 选指定难度 → 停下让你看结果
 
+支持自动关闭 ESC 菜单（误触 ESC 时的恢复）。
+
 用法:
     python test/test_dungeon_select.py
 """
@@ -26,7 +28,22 @@ from src.core.ocr import OCR
 from src.core.game_controller import GameController
 from src.pages.home import HomePage
 from src.pages.dungeon import DungeonSelectPage
+from src.pages.esc_menu import EscMenuPage
 from src.dungeons import get_dungeon
+
+
+def _dismiss_esc(ss, ocr, esc_menu, controller, max_retries=3):
+    """如果在 ESC 菜单页，按 ESC 关闭"""
+    for _ in range(max_retries):
+        img = ss.capture()
+        if img is None:
+            return False
+        if not esc_menu.detect_ocr(ocr, img):
+            return True  # 不在 ESC 菜单了
+        print("⚠️ 检测到 ESC 菜单 → 按 ESC 关闭")
+        esc_menu.dismiss(controller)
+        time.sleep(1)
+    return False
 
 
 def main():
@@ -51,6 +68,7 @@ def main():
     # 页面
     home = HomePage(recognizer, cfg.data)
     dungeon_page = DungeonSelectPage(recognizer, cfg.data)
+    esc_menu = EscMenuPage(recognizer, cfg.data)
 
     # 副本
     DungeonCls = get_dungeon(target)
@@ -61,20 +79,35 @@ def main():
 
     # ── 第一步：检测主城，按 L 进入副本 ──
     print("【1/4】检测主城...")
+
+    # 先检查是否在 ESC 菜单
     img = ss.capture()
     if img is None:
         print("❌ 截图失败")
         sys.exit(1)
+    if esc_menu.detect_ocr(ocr, img):
+        print("⚠️ 检测到 ESC 菜单，关闭...")
+        esc_menu.dismiss(controller)
+        time.sleep(1)
+        img = ss.capture()
 
     if home.detect(img):
         print("✅ 当前在主城 → 按 L 进入副本菜单")
         home.enter_dungeon(controller)
         time.sleep(3)
+
+        # 按 L 后可能弹出 ESC 菜单（如果 L 键映射冲突）
+        if not _dismiss_esc(ss, ocr, esc_menu, controller):
+            pass  # 没有 ESC 菜单最好
     else:
         print("⚠️ 不在主城，跳过（可能已在副本选择页）")
 
     # ── 第二步：检测副本选择页 ──
     print("\n【2/4】检测副本选择页...")
+
+    # 再次检查 ESC 菜单
+    _dismiss_esc(ss, ocr, esc_menu, controller)
+
     img = ss.capture()
     if img is None:
         print("❌ 截图失败")
@@ -89,6 +122,9 @@ def main():
     print(f"\n【3/4】选择 {target}（自动滚动）...")
     max_attempts = 6
     for attempt in range(1, max_attempts + 1):
+        # 每次截图前检查 ESC 菜单
+        _dismiss_esc(ss, ocr, esc_menu, controller)
+
         img = ss.capture()
         if img is None:
             continue
@@ -104,11 +140,12 @@ def main():
         print(f"\n❌ 滚动 {max_attempts} 次未找到 {target}")
         sys.exit(1)
 
-    # 等切页
     time.sleep(2)
 
     # ── 第四步：选难度 ──
     print(f"\n【4/4】选择难度 {difficulty}...")
+    _dismiss_esc(ss, ocr, esc_menu, controller)
+
     img = ss.capture()
     if img is None:
         print("❌ 截图失败")
@@ -120,7 +157,7 @@ def main():
     else:
         print(f"⚠️ 未找到 {difficulty}，可能不在难度选择页")
 
-    # ── 停下，等用户确认画面 ──
+    # ── 停下 ──
     print()
     print("=" * 50)
     print("✅ 流程完成！")
