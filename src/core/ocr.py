@@ -1,9 +1,10 @@
 """
-OCR 模块 — EasyOCR 识字
+OCR 模块 — RapidOCR 识字
 
-基于 easyocr，Python 3.13 友好，中文识别率高。
+基于 rapidocr_onnxruntime，轻量 ONNX 推理，无需 PaddlePaddle。
+自动下载模型，首次使用需联网。
 
-依赖: pip install easyocr
+依赖: pip install rapidocr-onnxruntime
 
 API:
     ocr = OCR()
@@ -18,33 +19,32 @@ logger = logging.getLogger("sb-two-tops.ocr")
 
 
 class OCR:
-    """EasyOCR 识字包装器"""
+    """RapidOCR 识字包装器"""
 
     def __init__(self):
-        self._reader = None
+        self._engine = None
 
     def _lazy_init(self) -> bool:
         """延迟初始化，只在首次调用时加载"""
-        if self._reader is not None:
+        if self._engine is not None:
             return True
         try:
-            import easyocr
-            # 只加载中英文模型
-            self._reader = easyocr.Reader(["ch_sim", "en"], gpu=False)
-            logger.info("EasyOCR 初始化成功")
+            from rapidocr_onnxruntime import RapidOCR
+            self._engine = RapidOCR()
+            logger.info("RapidOCR 初始化成功")
             return True
         except ImportError:
-            logger.error("easyocr 未安装，请执行: pip install easyocr")
+            logger.error("rapidocr-onnxruntime 未安装，请执行: pip install rapidocr-onnxruntime")
             return False
         except Exception as e:
-            logger.error(f"EasyOCR 初始化失败: {e}")
+            logger.error(f"RapidOCR 初始化失败: {e}")
             return False
 
     def read(self, image) -> List[Tuple[str, int, int, float]]:
         """对图片进行 OCR，返回识别结果列表
 
         Args:
-            image: numpy array (H, W, 3) BGR 或文件路径
+            image: BGR numpy array (H, W, 3) 或文件路径
 
         Returns:
             [(text, cx, cy, confidence), ...] 按置信度降序排列
@@ -54,20 +54,20 @@ class OCR:
             return []
 
         try:
-            results = self._reader.readtext(image)
+            result, _ = self._engine(image)
         except Exception as e:
             logger.error(f"OCR 识别失败: {e}")
             return []
 
-        if not results:
+        if not result:
             return []
 
         parsed = []
-        for bbox, text, score in results:
-            if not text:
+        for box, text, score in result:
+            if not text or score is None:
                 continue
-            xs = [p[0] for p in bbox]
-            ys = [p[1] for p in bbox]
+            xs = [p[0] for p in box]
+            ys = [p[1] for p in box]
             cx = int(sum(xs) / len(xs))
             cy = int(sum(ys) / len(ys))
             parsed.append((text.strip(), cx, cy, float(score)))
