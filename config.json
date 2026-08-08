@@ -7,7 +7,7 @@
     "post_click_wait_ms": 500
   },
   "dungeon": {
-    "targets": ["探险", "调停", "避险", "驱逐", "驱离", "护送", "追缉", "扼守"],
+    "target": "探险",
     "max_runs": 0
   },
   "log": {
