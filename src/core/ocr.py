@@ -77,7 +77,8 @@ class OCR:
         parsed.sort(key=lambda x: -x[3])
         return parsed
 
-    def find_text(self, image, target: str, min_score: float = 0.5
+    def find_text(self, image, target: str, min_score: float = 0.5,
+                  region: Optional[Tuple[int, int, int, int]] = None
                   ) -> Optional[Tuple[int, int, float]]:
         """在图片中查找指定文字，返回 (cx, cy, confidence)
 
@@ -85,12 +86,21 @@ class OCR:
             image: BGR numpy array
             target: 要查找的文字（如"委托"、"探险"）
             min_score: 最低置信度，默认 0.5
+            region: 搜索区域 (x, y, w, h)，不传则搜全图
 
         Returns:
             (cx, cy, confidence) 或 None
         """
+        if region:
+            rx, ry, rw, rh = region
+            image = image[ry:ry + rh, rx:rx + rw].copy()
+
         results = self.read(image)
         for text, cx, cy, score in results:
             if target in text and score >= min_score:
+                # 如果限制了区域，坐标要转回全图坐标
+                if region:
+                    cx += rx
+                    cy += ry
                 return cx, cy, score
         return None

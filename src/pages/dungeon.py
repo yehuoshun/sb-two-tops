@@ -57,11 +57,13 @@ class DungeonSelectPage(BasePage):
     def _ensure_commission_mode(self, ocr, clicker, screenshot: np.ndarray):
         """确保在委托模式，如果是灾厄模式则切换回来
 
-        OCR 识别页面上是否有"委托"文字。
+        只在底部按钮区域 OCR 搜索"委托"文字，避免误匹配顶部导航。
         有 → 已在委托模式
         没有 → 点击底部切换按钮切回委托
         """
-        result = ocr.find_text(screenshot, "委托", min_score=0.3)
+        # 底部按钮区域 (x, y, w, h)
+        btn_region = (50, 855, 100, 45)
+        result = ocr.find_text(screenshot, "委托", min_score=0.3, region=btn_region)
         if result:
             logger.debug(f"OCR 检测到委托模式 @ ({result[0]}, {result[1]}) 置信度={result[2]:.3f}")
             return False
