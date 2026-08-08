@@ -100,6 +100,14 @@ class Screenshot:
                 logger.warning("窗口已最小化，无法截图")
                 return None
 
+            # 将游戏窗口提到前台，确保 MSS 截到的是游戏画面
+            try:
+                win32gui.SetForegroundWindow(self.hwnd)
+                import time
+                time.sleep(0.05)
+            except Exception:
+                pass
+
             # 获取客户区在屏幕上的位置
             pt = win32gui.ClientToScreen(self.hwnd, (0, 0))
             left, top = pt
