@@ -10,7 +10,7 @@ from src.dungeons.base import BaseDungeon
 class DungeonExplore(BaseDungeon):
     name = "探险"
     max_scroll = 3
-    scroll_delta = -120
-    scroll_center = (384, 500)
+    scroll_delta = -480
+    scroll_center = (600, 800)
     battle_interval = 2.0
     battle_timeout = 180.0

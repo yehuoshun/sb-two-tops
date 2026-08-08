@@ -71,8 +71,23 @@ class MouseClicker:
         self.hwnd = hwnd
         self.scale_x, self.scale_y = scale
 
+    def move_to(self, x: int, y: int):
+        """将鼠标光标移到屏幕坐标 (x, y)（Unity 游戏需要光标在滚动区域上）"""
+        user32.SetCursorPos(x, y)
+        time.sleep(0.02)
+
     def scroll(self, delta: int = -120, x: int = 0, y: int = 0):
-        """滚动鼠标滚轮（SendInput + PostMessageW 兜底）"""
+        """滚动鼠标滚轮（SendInput + PostMessageW 兜底）
+
+        Args:
+            delta: 滚动量，负值向下，正值向上，默认 -120
+            x: 光标移到该 X 坐标后再滚动
+            y: 光标移到该 Y 坐标后再滚动
+        """
+        # Unity 游戏需要光标在滚动区域上
+        if x or y:
+            self.move_to(x, y)
+
         _sendinput_scroll(delta)
         wparam = (delta << 16) & 0xFFFF0000
         lparam = make_lparam(x, y)
