@@ -1,10 +1,9 @@
 """
-OCR 模块 — RapidOCR 识字
+OCR 模块 — EasyOCR 识字
 
-基于 rapidocr_onnxruntime，轻量 ONNX 推理，无需 PaddlePaddle。
-自动下载模型，首次使用需联网。
+基于 easyocr，Python 3.13 友好，中文识别率高。
 
-依赖: pip install rapidocr-onnxruntime
+依赖: pip install easyocr
 
 API:
     ocr = OCR()
@@ -19,32 +18,33 @@ logger = logging.getLogger("sb-two-tops.ocr")
 
 
 class OCR:
-    """RapidOCR 识字包装器"""
+    """EasyOCR 识字包装器"""
 
     def __init__(self):
-        self._engine = None
+        self._reader = None
 
     def _lazy_init(self) -> bool:
         """延迟初始化，只在首次调用时加载"""
-        if self._engine is not None:
+        if self._reader is not None:
             return True
         try:
-            from rapidocr_onnxruntime import RapidOCR
-            self._engine = RapidOCR()
-            logger.info("RapidOCR 初始化成功")
+            import easyocr
+            # 只加载中英文模型
+            self._reader = easyocr.Reader(["ch_sim", "en"], gpu=False)
+            logger.info("EasyOCR 初始化成功")
             return True
         except ImportError:
-            logger.error("rapidocr-onnxruntime 未安装，请执行: pip install rapidocr-onnxruntime")
+            logger.error("easyocr 未安装，请执行: pip install easyocr")
             return False
         except Exception as e:
-            logger.error(f"RapidOCR 初始化失败: {e}")
+            logger.error(f"EasyOCR 初始化失败: {e}")
             return False
 
     def read(self, image) -> List[Tuple[str, int, int, float]]:
         """对图片进行 OCR，返回识别结果列表
 
         Args:
-            image: BGR numpy array (H, W, 3) 或文件路径
+            image: numpy array (H, W, 3) BGR 或文件路径
 
         Returns:
             [(text, cx, cy, confidence), ...] 按置信度降序排列
@@ -54,30 +54,28 @@ class OCR:
             return []
 
         try:
-            result, _ = self._engine(image)
+            results = self._reader.readtext(image)
         except Exception as e:
             logger.error(f"OCR 识别失败: {e}")
             return []
 
-        if not result:
+        if not results:
             return []
 
         parsed = []
-        for box, text, score in result:
-            if not text or score is None:
+        for bbox, text, score in results:
+            if not text:
                 continue
-            # 计算文本框中心
-            xs = [p[0] for p in box]
-            ys = [p[1] for p in box]
+            xs = [p[0] for p in bbox]
+            ys = [p[1] for p in bbox]
             cx = int(sum(xs) / len(xs))
             cy = int(sum(ys) / len(ys))
             parsed.append((text.strip(), cx, cy, float(score)))
 
-        # 按置信度降序
         parsed.sort(key=lambda x: -x[3])
         return parsed
 
-    def find_text(self, image, target: str, min_score: float = 0.5,
+    def find_text(self, image, target: str, min_score: float = 0.3,
                   region: Optional[Tuple[int, int, int, int]] = None
                   ) -> Optional[Tuple[int, int, float]]:
         """在图片中查找指定文字，返回 (cx, cy, confidence)
@@ -85,7 +83,7 @@ class OCR:
         Args:
             image: BGR numpy array
             target: 要查找的文字（如"委托"、"探险"）
-            min_score: 最低置信度，默认 0.5
+            min_score: 最低置信度，默认 0.3
             region: 搜索区域 (x, y, w, h)，不传则搜全图
 
         Returns:
@@ -98,7 +96,6 @@ class OCR:
         results = self.read(image)
         for text, cx, cy, score in results:
             if target in text and score >= min_score:
-                # 如果限制了区域，坐标要转回全图坐标
                 if region:
                     cx += rx
                     cy += ry
