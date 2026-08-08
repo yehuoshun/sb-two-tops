@@ -17,21 +17,14 @@ TAB_BUTTONS = {
     "悬赏委托": (448, 218),
 }
 
-# 未匹配到模板时的回退坐标（有滚动条时不准确，仅作最后手段）
-DUNGEON_FALLBACK = {
-    "探险": (510, 530),
-    "无尽": (510, 530),
-    "勘察": (132, 530),
-    "避险": (258, 530),
-    "驱逐": (384, 530),
-    "调停": (636, 530),
-}
-
 # 滚动区域中心（卡片区域中间）
 SCROLL_CENTER = (384, 500)
 
 # 最大滚动尝试次数
 MAX_SCROLL_ATTEMPTS = 5
+
+# 委托/灾厄模式切换按钮（底部圆形星标）
+MODE_TOGGLE = (75, 875)
 
 
 class DungeonSelectPage(BasePage):
@@ -61,14 +54,36 @@ class DungeonSelectPage(BasePage):
         else:
             logger.warning(f"未知tab: {tab_name}")
 
+    def _ensure_commission_mode(self, clicker, screenshot: np.ndarray):
+        """确保在委托模式，如果是灾厄模式则切换回来
+
+        检测底部按钮文字，匹配到"灾厄"则点击切换。
+        """
+        templates = self.config.get("dungeon", "templates", default={})
+        template_path = templates.get("mode_zaiyi")
+        if template_path:
+            try:
+                self.recognizer.load_template("mode_zaiyi", template_path)
+            except FileNotFoundError:
+                pass
+
+        result = self.recognizer.locate(screenshot, "mode_zaiyi")
+        if result:
+            cx, cy, _ = result
+            logger.info(f"检测到灾厄模式按钮 @ ({cx}, {cy})，切换回委托")
+            clicker.click(MODE_TOGGLE[0], MODE_TOGGLE[1])
+            return True
+        return False
+
     def select_dungeon(self, clicker, screenshot: np.ndarray, target: str = "探险") -> bool:
         """通过模板匹配定位并点击副本卡片
 
         匹配逻辑：
-        1. 先尝试模板匹配（模板名: dungeon_{target}）
-        2. 匹配到 → 点击中心坐标，重置滚动计数
-        3. 没匹配到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
-        4. 滚动超过 MAX_SCROLL_ATTEMPTS 次 → 回退硬编码坐标（日志警告）
+        1. 先确保在委托模式（检测灾厄按钮）
+        2. 尝试模板匹配（模板名: dungeon_{target}）
+        3. 匹配到 → 点击中心坐标，重置滚动计数
+        4. 没匹配到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
+        5. 滚动超过 MAX_SCROLL_ATTEMPTS 次 → 放弃
 
         Args:
             clicker: Clicker 实例
@@ -78,6 +93,9 @@ class DungeonSelectPage(BasePage):
         Returns:
             bool: 是否成功点击
         """
+        # 确保在委托模式
+        self._ensure_commission_mode(clicker, screenshot)
+
         template_name = f"dungeon_{target}"
         templates = self.config.get("dungeon", "templates", default={})
         template_path = templates.get(target)
@@ -105,16 +123,9 @@ class DungeonSelectPage(BasePage):
             clicker.scroll(-120, SCROLL_CENTER[0], SCROLL_CENTER[1])
             return False  # 主循环重新截图再试
 
-        # 滚动次数耗尽，回退硬编码坐标
+        # 滚动次数耗尽，放弃
         self._scroll_attempt = 0
-        fallback = DUNGEON_FALLBACK.get(target)
-        if fallback:
-            cx, cy = fallback
-            logger.warning(f"模板匹配 + 滚动共 {MAX_SCROLL_ATTEMPTS} 次均失败，回退坐标 ({cx}, {cy})")
-            clicker.click(cx, cy)
-            return True
-
-        logger.error(f"找不到目标副本: {target}")
+        logger.error(f"找不到目标副本: {target}（已滚动 {MAX_SCROLL_ATTEMPTS} 次）")
         return False
 
 

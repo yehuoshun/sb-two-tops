@@ -11,7 +11,8 @@
     "max_runs": 0,
     "templates": {
       "探险": "templates/dungeon/tanxian.png",
-      "无尽": "templates/dungeon/wujin.png"
+      "无尽": "templates/dungeon/wujin.png",
+      "mode_zaiyi": "templates/dungeon/mode_zaiyi.png"
     }
   },
   "log": {
