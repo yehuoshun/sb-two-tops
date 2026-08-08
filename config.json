@@ -12,7 +12,7 @@
     "templates": {
       "探险": "templates/dungeon/tanxian.png",
       "无尽": "templates/dungeon/wujin.png",
-      "mode_zaiyi": "templates/dungeon/mode_zaiyi.png"
+      "mode_weituo": "templates/dungeon/mode_weituo.png"
     }
   },
   "log": {

@@ -57,23 +57,26 @@ class DungeonSelectPage(BasePage):
     def _ensure_commission_mode(self, clicker, screenshot: np.ndarray):
         """确保在委托模式，如果是灾厄模式则切换回来
 
-        检测底部按钮文字，匹配到"灾厄"则点击切换。
+        检测页面上是否有"委托"文字。
+        有 → 已在委托模式
+        没有 → 点击底部切换按钮切回委托
         """
         templates = self.config.get("dungeon", "templates", default={})
-        template_path = templates.get("mode_zaiyi")
+        template_path = templates.get("mode_weituo")
         if template_path:
             try:
-                self.recognizer.load_template("mode_zaiyi", template_path)
+                self.recognizer.load_template("mode_weituo", template_path)
             except FileNotFoundError:
                 pass
 
-        result = self.recognizer.locate(screenshot, "mode_zaiyi")
+        result = self.recognizer.locate(screenshot, "mode_weituo")
         if result:
-            cx, cy, _ = result
-            logger.info(f"检测到灾厄模式按钮 @ ({cx}, {cy})，切换回委托")
-            clicker.click(MODE_TOGGLE[0], MODE_TOGGLE[1])
-            return True
-        return False
+            logger.debug(f"检测到委托模式 (置信度={result[2]:.3f})")
+            return False
+
+        logger.info("未检测到委托模式，切换回委托")
+        clicker.click(MODE_TOGGLE[0], MODE_TOGGLE[1])
+        return True
 
     def select_dungeon(self, clicker, screenshot: np.ndarray, target: str = "探险") -> bool:
         """通过模板匹配定位并点击副本卡片
