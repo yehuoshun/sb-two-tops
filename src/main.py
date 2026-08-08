@@ -113,8 +113,10 @@ class SBAuto:
 
     def _handle_dungeon_select(self, screenshot):
         logger.info(f"副本选择 — 选择 {self.target}")
-        self.dungeon_select.select_dungeon(self.clicker, self.target)
-        time.sleep(1)
+        ok = self.dungeon_select.select_dungeon(self.clicker, screenshot, self.target)
+        if not ok:
+            # 需要滚动后重试，等主循环下次截图
+            time.sleep(1.5)
 
     def _handle_confirm(self, screenshot):
         logger.info("确认进入副本")

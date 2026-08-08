@@ -23,6 +23,7 @@ WM_RBUTTONUP = 0x0205
 WM_MBUTTONDOWN = 0x0207
 WM_MBUTTONUP = 0x0208
 WM_MOUSEMOVE = 0x0200
+WM_MOUSEWHEEL = 0x020A
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 MK_LBUTTON = 0x0001
@@ -117,6 +118,19 @@ class Clicker:
         self._held_keys: Dict[str, float] = {}  # key_name -> press_time
 
     # ── 鼠标 ──
+
+    def scroll(self, delta: int = -120, x: int = 0, y: int = 0):
+        """滚动鼠标滚轮
+
+        Args:
+            delta: 滚动量，负值向下，正值向上，默认 -120（向下滚一格）
+            x: 滚动位置 X 坐标（可选）
+            y: 滚动位置 Y 坐标（可选）
+        """
+        wparam = (delta << 16) & 0xFFFF0000
+        lparam = _make_lparam(x, y)
+        user32.PostMessageW(self.hwnd, WM_MOUSEWHEEL, wparam, lparam)
+        time.sleep(self.post_click_wait_ms / 1000.0)
 
     def _scale(self, x: int, y: int) -> Tuple[int, int]:
         return int(x * self.scale_x), int(y * self.scale_y)

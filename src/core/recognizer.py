@@ -169,6 +169,40 @@ class Recognizer:
 
         return True
 
+    def locate(
+            self, screenshot: np.ndarray, template_name: str,
+            threshold: float = 0.7
+    ) -> Optional[Tuple[int, int, float]]:
+        """在截图中定位模板，返回 (中心x, 中心y, 置信度) 或 None
+
+        Args:
+            screenshot: 截图（BGR 或灰度）
+            template_name: 模板名称（需先 load_template 或 load_all）
+            threshold: 匹配阈值，默认 0.7
+
+        Returns:
+            (cx, cy, confidence) 或 None
+        """
+        template = self._template_cache.get(template_name)
+        if template is None:
+            return None
+
+        if len(screenshot.shape) == 3:
+            gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = screenshot
+
+        result = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        if max_val >= threshold:
+            h, w = template.shape
+            cx = max_loc[0] + w // 2
+            cy = max_loc[1] + h // 2
+            return cx, cy, float(max_val)
+
+        return None
+
     def match_multi(
             self, screenshot: np.ndarray,
             templates: Dict[str, str],

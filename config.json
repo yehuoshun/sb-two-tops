@@ -8,7 +8,11 @@
   },
   "dungeon": {
     "target": "探险",
-    "max_runs": 0
+    "max_runs": 0,
+    "templates": {
+      "探险": "templates/dungeon/tanxian.png",
+      "无尽": "templates/dungeon/wujin.png"
+    }
   },
   "log": {
     "level": "INFO"
