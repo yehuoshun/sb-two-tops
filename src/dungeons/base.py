@@ -37,6 +37,12 @@ class BaseDungeon:
     battle_interval: float = 2.0
     battle_timeout: float = 180.0
 
+    # 难度选择（默认 50级，可改）
+    difficulty: str = "50级"
+
+    # 左侧难度按钮 OCR 搜索区域 (x, y, w, h)
+    difficulty_region: tuple = (20, 200, 300, 600)
+
     # 确认/结算按钮 OCR 搜索区域 (x, y, w, h)
     confirm_region: tuple = (400, 500, 1120, 400)
     settlement_region: tuple = (300, 600, 1320, 420)
@@ -75,6 +81,25 @@ class BaseDungeon:
 
     def reset_scroll(self):
         self._scroll_attempt = 0
+
+    # ── 难度选择 ──
+
+    def select_difficulty(self, screenshot) -> bool:
+        """OCR 搜索并点击左侧难度按钮
+
+        Returns:
+            bool: 是否成功点击
+        """
+        result = self.ocr.find_text(screenshot, self.difficulty, min_score=0.3,
+                                    region=self.difficulty_region)
+        if result:
+            cx, cy, score = result
+            logger.info(f"[{self.name}] 难度: {self.difficulty} @ ({cx}, {cy}) 置信度={score:.3f}")
+            self.controller.click(cx, cy)
+            return True
+
+        logger.warning(f"[{self.name}] 难度按钮未找到: {self.difficulty}")
+        return False
 
     # ── 确认进入 ──
 

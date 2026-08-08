@@ -8,6 +8,7 @@
   },
   "dungeon": {
     "target": "扼守",
+    "difficulty": "50级",
     "max_runs": 0
   },
   "log": {

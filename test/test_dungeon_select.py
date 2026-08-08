@@ -1,11 +1,10 @@
 """
-测试：主城 → 进入副本 → 选择扼守（自动滚动）
+测试：主城 → 进入副本 → 选择扼守 → 选难度
 
 验证流程：
 1. 检测主城 → 按 L 进入副本菜单
-2. 检测副本选择页 → 滚动找扼守
-3. 找到 → 点击 → 停下让你看结果
-4. 找不到 → 报错退出
+2. 检测副本选择页 → 滚动找扼守 → 点击
+3. 检测难度选择页 → 选指定难度 → 停下让你看结果
 
 用法:
     python test/test_dungeon_select.py
@@ -33,6 +32,7 @@ from src.dungeons import get_dungeon
 def main():
     cfg = Config(str(PROJECT_ROOT / "config.json"))
     target = cfg.get("dungeon", "target", default="扼守")
+    difficulty = cfg.get("dungeon", "difficulty", default="50级")
 
     # 截图
     ss = Screenshot(window_title=cfg.window_title, window_class=cfg.window_class)
@@ -56,11 +56,11 @@ def main():
     DungeonCls = get_dungeon(target)
     dungeon = DungeonCls(ocr, controller)
 
-    print(f"🎯 目标: {target}")
+    print(f"🎯 目标: {target} 难度: {difficulty}")
     print()
 
     # ── 第一步：检测主城，按 L 进入副本 ──
-    print("【1/3】检测主城...")
+    print("【1/4】检测主城...")
     img = ss.capture()
     if img is None:
         print("❌ 截图失败")
@@ -69,12 +69,12 @@ def main():
     if home.detect(img):
         print("✅ 当前在主城 → 按 L 进入副本菜单")
         home.enter_dungeon(controller)
-        time.sleep(3)  # 等待切页
+        time.sleep(3)
     else:
-        print("⚠️ 不在主城，跳过按 L 步骤（可能已在副本选择页）")
+        print("⚠️ 不在主城，跳过（可能已在副本选择页）")
 
     # ── 第二步：检测副本选择页 ──
-    print("\n【2/3】检测副本选择页...")
+    print("\n【2/4】检测副本选择页...")
     img = ss.capture()
     if img is None:
         print("❌ 截图失败")
@@ -83,10 +83,10 @@ def main():
     if dungeon_page.detect(img):
         print("✅ 当前在副本选择页")
     else:
-        print("⚠️ 未检测到副本选择页（图标行数不符），继续尝试选本...")
+        print("⚠️ 图标行数不符，继续尝试选本...")
 
     # ── 第三步：选择扼守（自动滚动） ──
-    print(f"\n【3/3】选择 {target}（自动滚动）...")
+    print(f"\n【3/4】选择 {target}（自动滚动）...")
     max_attempts = 6
     for attempt in range(1, max_attempts + 1):
         img = ss.capture()
@@ -104,11 +104,27 @@ def main():
         print(f"\n❌ 滚动 {max_attempts} 次未找到 {target}")
         sys.exit(1)
 
+    # 等切页
+    time.sleep(2)
+
+    # ── 第四步：选难度 ──
+    print(f"\n【4/4】选择难度 {difficulty}...")
+    img = ss.capture()
+    if img is None:
+        print("❌ 截图失败")
+        sys.exit(1)
+
+    ok = dungeon.select_difficulty(img)
+    if ok:
+        print(f"✅ 点击难度 {difficulty} 成功！")
+    else:
+        print(f"⚠️ 未找到 {difficulty}，可能不在难度选择页")
+
     # ── 停下，等用户确认画面 ──
     print()
     print("=" * 50)
     print("✅ 流程完成！")
-    print(f"已点击 \"{target}\"，请观察游戏画面是否正确。")
+    print(f"已选择 \"{target}\" — \"{difficulty}\"，请观察画面是否正确。")
     print("确认后告诉我后续逻辑，我继续写。")
     print("=" * 50)
 
