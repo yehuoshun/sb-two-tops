@@ -3,3 +3,4 @@ numpy>=2.5.1
 pywin32>=312
 rapidocr
 onnxruntime
+mss
