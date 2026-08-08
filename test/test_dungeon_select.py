@@ -49,7 +49,7 @@ def _dismiss_esc(ss, ocr, esc_menu, controller, max_retries=3):
             return False
         if not esc_menu.detect_ocr(ocr, img):
             return True
-        print("  ⚠️ ESC 菜单 → 按 ESC 关闭")
+        print("  \u26a0 ESC 菜单 -> 按 ESC 关闭")
         esc_menu.dismiss(controller)
         time.sleep(0.5)
     return False
@@ -63,9 +63,9 @@ def main():
     # 模块
     ss = Screenshot(window_title=cfg.window_title, window_class=cfg.window_class)
     if not ss.find_window():
-        print("❌ 未找到游戏窗口")
+        print("FAIL 未找到游戏窗口")
         sys.exit(1)
-    print(f"✅ 找到窗口: {cfg.window_title}")
+    print("OK 找到窗口: " + cfg.window_title)
 
     recognizer = Recognizer()
     ocr = OCR()
@@ -80,84 +80,94 @@ def main():
     DungeonCls = get_dungeon(target)
     dungeon = DungeonCls(ocr, controller)
 
-    print(f"🎯 目标: {target} 难度: {difficulty}")
+    print("Target: " + target + " Difficulty: " + difficulty)
     print()
 
-    # ── 第一步：派.esc 菜单 → 主城 → 按 L ──
-    print("【1/4】前往副本菜单...")
+    # ── 第一步：识别当前页面，前往副本菜单 ──
+    print("[1/3] 前往副本菜单...")
 
-    def is_home_or_dungeon(img):
-        return home.detect(img) or dungeon_page.detect(img)
-
-    ok, img = _wait_until(ss, is_home_or_dungeon, timeout=5)
-    if not ok:
-        print("❌ 无法确定当前页面")
+    # 先看当前是什么页面
+    img = ss.capture()
+    if img is None:
+        print("FAIL 截图失败")
         sys.exit(1)
 
-    if home.detect(img):
-        # 关掉可能的 ESC 菜单
+    if esc_menu.detect_ocr(ocr, img):
+        print("  \u26a0 当前在 ESC 菜单 -> 关闭")
         _dismiss_esc(ss, ocr, esc_menu, controller)
-        print("  ✅ 主城 → 按 L")
+        time.sleep(0.5)
+        img = ss.capture()
+
+    if home.detect(img):
+        print("  OK 当前在主城 -> 按 L")
         controller.press_key("L", down_time=0.1)
-        # 等待进入副本选择页
+        # 等进入副本页
         ok, _ = _wait_until(ss, lambda i: dungeon_page.detect(i), timeout=5)
         if not ok:
             # 可能弹了 ESC 菜单
             _dismiss_esc(ss, ocr, esc_menu, controller)
-            print("  ⚠️ 按 L 后未到副本页，再按一次 L")
+            print("  \u26a0 按 L 后未到副本页，再按一次")
             controller.press_key("L", down_time=0.1)
             ok, _ = _wait_until(ss, lambda i: dungeon_page.detect(i), timeout=5)
+            if not ok:
+                print("FAIL 无法进入副本选择页")
+                sys.exit(1)
+    elif dungeon_page.detect(img):
+        print("  OK 已在副本选择页")
     else:
-        print("  ✅ 已在副本选择页（跳过按 L）")
+        print("  \u26a0 未知页面，尝试直接按 L")
+        controller.press_key("L", down_time=0.1)
+        ok, _ = _wait_until(ss, lambda i: dungeon_page.detect(i) or home.detect(i), timeout=5)
+        if not ok:
+            print("FAIL 无法确定当前页面状态")
+            sys.exit(1)
 
     # ── 第二步：滚动找扼守 ──
-    print(f"\n【2/3】选择 {target}（自动滚动）...")
+    print("\n[2/3] 选择 " + target + " (自动滚动)...")
 
     found = False
     for attempt in range(1, 8):
         _dismiss_esc(ss, ocr, esc_menu, controller)
 
-        print(f"  \#{attempt} ", end="", flush=True)
-        ok, img = _wait_until(ss, lambda i: True, timeout=3)  # 等截图
+        print("  #" + str(attempt) + " ", end="", flush=True)
+        ok, img = _wait_until(ss, lambda i: True, timeout=3)
         if not ok:
             continue
 
-        # OCR 找扼守
         result = ocr.find_text(img, target, min_score=0.3)
         if result:
             cx, cy, score = result
-            print(f"✅ 找到 {target} @ ({cx}, {cy}) 置信度={score:.3f}")
+            print("OK 找到 " + target + " @ (" + str(cx) + ", " + str(cy) + ") score=" + str(round(score, 3)))
             controller.click(cx, cy)
             found = True
             break
 
-        # 没找到 → 滚动
-        print("↓", end="", flush=True)
+        print("down", end="", flush=True)
         controller.scroll(-120, 384, 500)
-        time.sleep(0.3)  # 等画面稳定
+        time.sleep(0.3)
 
     if not found:
-        print(f"\n❌ 未找到 {target}")
+        print("\nFAIL 未找到 " + target)
         sys.exit(1)
 
     # ── 第三步：选难度 ──
-    print(f"\n【3/3】选择难度 {difficulty}...")
+    print("\n[3/3] 选择难度 " + difficulty + "...")
 
     def check_difficulty(img):
         return dungeon.select_difficulty(img)
 
     ok, _ = _wait_until(ss, check_difficulty, timeout=5)
     if ok:
-        print(f"  ✅ 点击难度 {difficulty}")
+        print("  OK 点击难度 " + difficulty)
     else:
-        print(f"  ⚠️ 未找到 {difficulty}（可能不在难度选择页）")
+        print("  \u26a0 未找到 " + difficulty + " (可能不在难度选择页)")
 
     # ── 停下 ──
     print()
     print("=" * 50)
-    print("✅ 流程完成！")
-    print(f"已选择 \"{target}\" — \"{difficulty}\"，请观察画面是否正确。")
-    print("确认后告诉我后续逻辑，我继续写。")
+    print("OK 流程完成!")
+    print("已选择: " + target + " - " + difficulty)
+    print("确认后告诉我后续逻辑")
     print("=" * 50)
 
 
