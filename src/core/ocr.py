@@ -43,16 +43,16 @@ class OCR:
             return []
 
         try:
-            result, _ = self._engine(image)
+            result = self._engine(image)
         except Exception as e:
             logger.error(f"OCR 识别失败: {e}")
             return []
 
-        if not result:
+        if result.txts is None or len(result) == 0:
             return []
 
         parsed = []
-        for box, text, score in result:
+        for box, text, score in zip(result.boxes, result.txts, result.scores):
             if not text or score is None:
                 continue
             xs = [p[0] for p in box]

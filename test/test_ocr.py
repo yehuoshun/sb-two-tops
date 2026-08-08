@@ -51,7 +51,7 @@ def test_ocr(image, debug=False):
     from rapidocr import RapidOCR
 
     engine = RapidOCR()
-    result, _ = engine(image)
+    result = engine(image)
 
     if not result:
         print("❌ OCR 未识别到任何文字")
@@ -61,14 +61,15 @@ def test_ocr(image, debug=False):
 
     # 匹配目标
     found = {}
-    for box, text, score in result:
-        text = text.strip()
-        if not text:
-            continue
-        xs = [p[0] for p in box]
-        ys = [p[1] for p in box]
-        cx = int(sum(xs) / len(xs))
-        cy = int(sum(ys) / len(ys))
+    if result.txts is not None:
+        for box, text, score in zip(result.boxes, result.txts, result.scores):
+            text = text.strip()
+            if not text:
+                continue
+            xs = [p[0] for p in box]
+            ys = [p[1] for p in box]
+            cx = int(sum(xs) / len(xs))
+            cy = int(sum(ys) / len(ys))
 
         for t in TARGETS + EXTRA_TARGETS:
             if t in text and t not in found:
@@ -96,14 +97,15 @@ def test_ocr(image, debug=False):
     # 全部结果
     if debug:
         all_results = []
-        for box, text, score in result:
-            text = text.strip()
-            if text:
-                xs = [p[0] for p in box]
-                ys = [p[1] for p in box]
-                cx = int(sum(xs) / len(xs))
-                cy = int(sum(ys) / len(ys))
-                all_results.append((text, cx, cy, score))
+        if result.txts is not None:
+            for box, text, score in zip(result.boxes, result.txts, result.scores):
+                text = text.strip()
+                if text:
+                    xs = [p[0] for p in box]
+                    ys = [p[1] for p in box]
+                    cx = int(sum(xs) / len(xs))
+                    cy = int(sum(ys) / len(ys))
+                    all_results.append((text, cx, cy, score))
         all_results.sort(key=lambda x: -x[3])
         print("\n=== 全部识别结果 ===")
         for text, cx, cy, score in all_results:
