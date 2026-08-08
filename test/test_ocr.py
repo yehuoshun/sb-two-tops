@@ -95,8 +95,15 @@ def test_ocr(image, debug=False):
 
     # 全部结果
     if debug:
-        all_results = [(text, cx, cy, score) for bbox, text, score in result
-                       if (text := text.strip())]
+        all_results = []
+        for bbox, text, score in result:
+            text = text.strip()
+            if text:
+                xs = [p[0] for p in bbox]
+                ys = [p[1] for p in bbox]
+                cx = int(sum(xs) / len(xs))
+                cy = int(sum(ys) / len(ys))
+                all_results.append((text, cx, cy, score))
         all_results.sort(key=lambda x: -x[3])
         print("\n=== 全部识别结果 ===")
         for text, cx, cy, score in all_results:
