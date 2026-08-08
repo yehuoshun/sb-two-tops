@@ -1,5 +1,4 @@
 opencv-python>=4.9.0
 numpy>=2.5.1
 pywin32>=312
-dxcam>=0.1.0
 rapidocr
