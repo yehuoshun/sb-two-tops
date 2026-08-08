@@ -59,6 +59,26 @@ def test_ocr(image, debug=False):
 
     print(f"📝 OCR 识别到 {len(result)} 个文本块\n")
 
+    # 判断当前模式（委托/灾厄）
+    mode = None
+    if result.txts is not None:
+        for box, text, score in zip(result.boxes, result.txts, result.scores):
+            text = text.strip()
+            if not text:
+                continue
+            xs = [p[0] for p in box]
+            ys = [p[1] for p in box]
+            cx = int(sum(xs) / len(xs))
+            cy = int(sum(ys) / len(ys))
+            # 模式切换按钮在底部 (75, 875) 附近
+            if 830 <= cy <= 920 and 30 <= cx <= 120:
+                if text in ("委托", "灾厄"):
+                    mode = text
+                    print(f"🔘 当前模式: {text} @ ({cx}, {cy}) 置信度={score:.3f}")
+
+    if mode is None:
+        print("🔘 当前模式: 未识别（可能不在副本选择页）")
+
     # 匹配目标
     found = {}
     if result.txts is not None:
