@@ -25,11 +25,17 @@
 - 全部 PyCharm 零警告达成
 - 废弃模板清理
 
+#### 2026-08-09 完成
+- **clicker**: 新增 `scroll()` 滚轮方法（PostMessage WM_MOUSEWHEEL）
+- **recognizer**: 新增 `locate()` 全图模板定位，返回中心坐标
+- **dungeon**: `select_dungeon` 改为模板匹配+滚动重试+回退坐标（跨调用跟踪滚动次数）
+- **main**: 传截图给 `select_dungeon`，支持滚动重试流程
+- **config**: 加 `dungeon.templates` 配置段，零硬编码模板路径
+
 #### 待完成
+- [ ] 裁剪 **探险·无尽** 卡片模板 → `templates/dungeon/tanxian.png`
 - [ ] 采集 **确认进入** 截图 + 裁模板
 - [ ] 采集 **结算** 截图 + 裁模板
-- [ ] 子副本选择（"探险/无尽"卡片识别或坐标）
-- [ ] 填入各页面点击坐标到 `config.json`
 - [ ] 跑通全流程
 
 ### ⏳ Phase 3：打包（未开始）
