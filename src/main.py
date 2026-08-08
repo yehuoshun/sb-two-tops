@@ -14,6 +14,7 @@ from src.core.config import Config
 from src.core.screenshot import Screenshot
 from src.core.recognizer import Recognizer
 from src.core.clicker import Clicker
+from src.core.ocr import OCR
 from src.pages.home import HomePage
 from src.pages.dungeon import DungeonSelectPage, ConfirmPage
 from src.pages.battle import BattlePage, SettlementPage
@@ -67,6 +68,7 @@ class SBAuto:
             sys.exit(1)
 
         self.recognizer = Recognizer()
+        self.ocr = OCR()
         self.clicker = Clicker(
             hwnd=self.screenshot.hwnd,
             post_click_wait_ms=self.config.post_click_wait_ms,
@@ -113,7 +115,7 @@ class SBAuto:
 
     def _handle_dungeon_select(self, screenshot):
         logger.info(f"副本选择 — 选择 {self.target}")
-        ok = self.dungeon_select.select_dungeon(self.clicker, screenshot, self.target)
+        ok = self.dungeon_select.select_dungeon(self.ocr, self.clicker, screenshot, self.target)
         if not ok:
             # 需要滚动后重试，等主循环下次截图
             time.sleep(1.5)

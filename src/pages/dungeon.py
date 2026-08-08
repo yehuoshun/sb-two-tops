@@ -54,41 +54,34 @@ class DungeonSelectPage(BasePage):
         else:
             logger.warning(f"未知tab: {tab_name}")
 
-    def _ensure_commission_mode(self, clicker, screenshot: np.ndarray):
+    def _ensure_commission_mode(self, ocr, clicker, screenshot: np.ndarray):
         """确保在委托模式，如果是灾厄模式则切换回来
 
-        检测页面上是否有"委托"文字。
+        OCR 识别页面上是否有"委托"文字。
         有 → 已在委托模式
         没有 → 点击底部切换按钮切回委托
         """
-        templates = self.config.get("dungeon", "templates", default={})
-        template_path = templates.get("mode_weituo")
-        if template_path:
-            try:
-                self.recognizer.load_template("mode_weituo", template_path)
-            except FileNotFoundError:
-                pass
-
-        result = self.recognizer.locate(screenshot, "mode_weituo")
+        result = ocr.find_text(screenshot, "委托", min_score=0.3)
         if result:
-            logger.debug(f"检测到委托模式 (置信度={result[2]:.3f})")
+            logger.debug(f"OCR 检测到委托模式 @ ({result[0]}, {result[1]}) 置信度={result[2]:.3f}")
             return False
 
-        logger.info("未检测到委托模式，切换回委托")
+        logger.info("OCR 未检测到委托，切换回委托模式")
         clicker.click(MODE_TOGGLE[0], MODE_TOGGLE[1])
         return True
 
-    def select_dungeon(self, clicker, screenshot: np.ndarray, target: str = "探险") -> bool:
-        """通过模板匹配定位并点击副本卡片
+    def select_dungeon(self, ocr, clicker, screenshot: np.ndarray, target: str = "探险") -> bool:
+        """通过 OCR 定位并点击副本卡片
 
         匹配逻辑：
-        1. 先确保在委托模式（检测灾厄按钮）
-        2. 尝试模板匹配（模板名: dungeon_{target}）
-        3. 匹配到 → 点击中心坐标，重置滚动计数
-        4. 没匹配到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
+        1. 先确保在委托模式
+        2. OCR 识别全图，找目标副本名
+        3. 找到 → 点击文字中心，重置滚动计数
+        4. 没找到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
         5. 滚动超过 MAX_SCROLL_ATTEMPTS 次 → 放弃
 
         Args:
+            ocr: OCR 实例
             clicker: Clicker 实例
             screenshot: 当前截图
             target: 目标副本名称（探险/无尽等）
@@ -97,38 +90,27 @@ class DungeonSelectPage(BasePage):
             bool: 是否成功点击
         """
         # 确保在委托模式
-        self._ensure_commission_mode(clicker, screenshot)
+        self._ensure_commission_mode(ocr, clicker, screenshot)
 
-        template_name = f"dungeon_{target}"
-        templates = self.config.get("dungeon", "templates", default={})
-        template_path = templates.get(target)
-
-        # 加载模板（如果路径存在且未缓存）
-        if template_path:
-            try:
-                self.recognizer.load_template(template_name, template_path)
-            except FileNotFoundError:
-                logger.warning(f"模板文件不存在: {template_path}")
-
-        # 模板匹配
-        result = self.recognizer.locate(screenshot, template_name)
+        # OCR 识别目标文字
+        result = ocr.find_text(screenshot, target, min_score=0.3)
         if result:
-            cx, cy, conf = result
-            logger.info(f"匹配到 {target} @ ({cx}, {cy}) 置信度={conf:.3f}")
+            cx, cy, score = result
+            logger.info(f"OCR 找到 {target} @ ({cx}, {cy}) 置信度={score:.3f}")
             clicker.click(cx, cy)
             self._scroll_attempt = 0
             return True
 
-        # 没匹配到：滚动再试
+        # 没找到：滚动再试
         self._scroll_attempt += 1
         if self._scroll_attempt < MAX_SCROLL_ATTEMPTS:
-            logger.info(f"未匹配到 {target}，滚动 {self._scroll_attempt}/{MAX_SCROLL_ATTEMPTS}")
+            logger.info(f"OCR 未找到 {target}，滚动 {self._scroll_attempt}/{MAX_SCROLL_ATTEMPTS}")
             clicker.scroll(-120, SCROLL_CENTER[0], SCROLL_CENTER[1])
             return False  # 主循环重新截图再试
 
         # 滚动次数耗尽，放弃
         self._scroll_attempt = 0
-        logger.error(f"找不到目标副本: {target}（已滚动 {MAX_SCROLL_ATTEMPTS} 次）")
+        logger.error(f"OCR 找不到目标副本: {target}（已滚动 {MAX_SCROLL_ATTEMPTS} 次）")
         return False
 
 
