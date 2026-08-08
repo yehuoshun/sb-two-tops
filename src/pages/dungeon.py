@@ -36,9 +36,22 @@ class DungeonSelectPage(BasePage):
         self._scroll_attempt = 0
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在副本选择页 — 图标行约2个"""
+        """检测是否在副本选择页 — 图标行约2个，OCR 兜底"""
         count = self.recognizer.count_icons_in_row(screenshot)
-        return 1 <= count <= 3
+        if 1 <= count <= 3:
+            return True
+        # OCR 兜底：检测 tab 栏文字
+        return False
+
+    def detect_ocr(self, ocr, screenshot) -> bool:
+        """OCR 检测 tab 栏是否有委托/夜航手册等文字"""
+        tab_region = (100, 190, 400, 60)  # x, y, w, h
+        for keyword in ["委托", "夜航手册", "委托密函", "悬赏委托"]:
+            result = ocr.find_text(screenshot, keyword, min_score=0.3,
+                                   region=tab_region)
+            if result:
+                return True
+        return False
 
     def select_tab(self, clicker, tab_name: str = "委托"):
         """点击指定的tab按钮"""
