@@ -43,7 +43,7 @@ class SBAuto:
         self.state = PageState.UNKNOWN
         self.run_count = 0
         self.max_runs = self.config.get("dungeon", "max_runs", default=0)
-        self.target = self.config.get("dungeon", "target", default="探险")
+        self.targets = self.config.get("dungeon", "targets", default=["探险"])
         self._start_time = time.time()
         self._loading_start = 0
         self._dungeon_start = 0
@@ -114,8 +114,8 @@ class SBAuto:
         time.sleep(2)
 
     def _handle_dungeon_select(self, screenshot):
-        logger.info(f"副本选择 — 选择 {self.target}")
-        ok = self.dungeon_select.select_dungeon(self.ocr, self.clicker, screenshot, self.target)
+        logger.info(f"副本选择 — 尝试 {len(self.targets)} 个目标")
+        ok = self.dungeon_select.select_dungeon(self.ocr, self.clicker, screenshot, self.targets)
         if not ok:
             # 需要滚动后重试，等主循环下次截图
             time.sleep(1.5)
@@ -167,7 +167,7 @@ class SBAuto:
     def run(self):
         logger.info("=" * 40)
         logger.info("sb-two-tops 启动")
-        logger.info(f"目标副本: {self.target}")
+        logger.info(f"目标副本: {', '.join(self.targets)}")
         logger.info(f"最大次数: {'无限' if self.max_runs == 0 else self.max_runs}")
         logger.info("=" * 40)
 

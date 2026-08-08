@@ -72,47 +72,51 @@ class DungeonSelectPage(BasePage):
         clicker.click(MODE_TOGGLE[0], MODE_TOGGLE[1])
         return True
 
-    def select_dungeon(self, ocr, clicker, screenshot: np.ndarray, target: str = "探险") -> bool:
+    def select_dungeon(self, ocr, clicker, screenshot: np.ndarray, targets: list = None) -> bool:
         """通过 OCR 定位并点击副本卡片
 
         匹配逻辑：
         1. 先确保在委托模式
-        2. OCR 识别全图，找目标副本名
-        3. 找到 → 点击文字中心，重置滚动计数
-        4. 没找到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
+        2. 按顺序尝试 OCR 识别每个目标副本名
+        3. 找到第一个 → 点击文字中心，重置滚动计数
+        4. 全部没找到 → 滚动计数+1，滚轮向下 → 返回 False（主循环重新截图再试）
         5. 滚动超过 MAX_SCROLL_ATTEMPTS 次 → 放弃
 
         Args:
             ocr: OCR 实例
             clicker: Clicker 实例
             screenshot: 当前截图
-            target: 目标副本名称（探险/无尽等）
+            targets: 目标副本名称列表，如 ["探险", "调停", "避险"]
 
         Returns:
             bool: 是否成功点击
         """
+        if targets is None:
+            targets = ["探险"]
+
         # 确保在委托模式
         self._ensure_commission_mode(ocr, clicker, screenshot)
 
-        # OCR 识别目标文字
-        result = ocr.find_text(screenshot, target, min_score=0.3)
-        if result:
-            cx, cy, score = result
-            logger.info(f"OCR 找到 {target} @ ({cx}, {cy}) 置信度={score:.3f}")
-            clicker.click(cx, cy)
-            self._scroll_attempt = 0
-            return True
+        # 遍历所有目标，找到第一个匹配的
+        for target in targets:
+            result = ocr.find_text(screenshot, target, min_score=0.3)
+            if result:
+                cx, cy, score = result
+                logger.info(f"OCR 找到 {target} @ ({cx}, {cy}) 置信度={score:.3f}")
+                clicker.click(cx, cy)
+                self._scroll_attempt = 0
+                return True
 
-        # 没找到：滚动再试
+        # 全部没找到：滚动再试
         self._scroll_attempt += 1
         if self._scroll_attempt < MAX_SCROLL_ATTEMPTS:
-            logger.info(f"OCR 未找到 {target}，滚动 {self._scroll_attempt}/{MAX_SCROLL_ATTEMPTS}")
+            logger.info(f"未找到任何目标副本，滚动 {self._scroll_attempt}/{MAX_SCROLL_ATTEMPTS}")
             clicker.scroll(-120, SCROLL_CENTER[0], SCROLL_CENTER[1])
             return False  # 主循环重新截图再试
 
         # 滚动次数耗尽，放弃
         self._scroll_attempt = 0
-        logger.error(f"OCR 找不到目标副本: {target}（已滚动 {MAX_SCROLL_ATTEMPTS} 次）")
+        logger.error(f"找不到任何目标副本（已滚动 {MAX_SCROLL_ATTEMPTS} 次）")
         return False
 
 
