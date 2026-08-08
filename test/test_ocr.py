@@ -48,7 +48,7 @@ def _load_image(path):
 
 
 def test_ocr(image, debug=False):
-    from rapidocr_onnxruntime import RapidOCR
+    from rapidocr import RapidOCR
 
     engine = RapidOCR()
     result, _ = engine(image)

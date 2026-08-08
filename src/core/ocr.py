@@ -29,12 +29,12 @@ class OCR:
         if self._engine is not None:
             return True
         try:
-            from rapidocr_onnxruntime import RapidOCR
+            from rapidocr import RapidOCR
             self._engine = RapidOCR()
             logger.info("RapidOCR 初始化成功")
             return True
         except ImportError:
-            logger.error("rapidocr-onnxruntime 未安装，请执行: pip install rapidocr-onnxruntime")
+            logger.error("rapidocr 未安装，请执行: pip install rapidocr onnxruntime")
             return False
         except Exception as e:
             logger.error(f"RapidOCR 初始化失败: {e}")
