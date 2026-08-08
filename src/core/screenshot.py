@@ -34,10 +34,16 @@ class Screenshot:
             return True
         try:
             import dxcam
-            self._camera = dxcam.create(output_idx=0)
-            self._dxcam_imported = True
-            logger.info("dxcam 初始化成功")
-            return True
+            for idx in range(4):
+                try:
+                    self._camera = dxcam.create(output_idx=idx)
+                    self._dxcam_imported = True
+                    logger.info(f"dxcam 初始化成功 (output_idx={idx})")
+                    return True
+                except Exception:
+                    continue
+            logger.error("dxcam 初始化失败: 所有输出索引均不可用")
+            return False
         except ImportError:
             logger.error("dxcam 未安装，请执行: pip install dxcam")
             return False
