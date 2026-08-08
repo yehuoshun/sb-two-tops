@@ -2,7 +2,7 @@
 键盘模块 — PostMessage 后台按键
 
 仅处理键盘操作（press, hold, release）。
-不涉及鼠标、游戏动作。
+无固定等待 — 调用方自行轮询状态。
 """
 
 import ctypes
@@ -28,27 +28,20 @@ user32.PostMessageW.restype = ctypes.wintypes.BOOL
 class Keyboard:
     """PostMessage 后台键盘操作器"""
 
-    def __init__(self, hwnd: int, post_click_wait_ms: int = 500):
+    def __init__(self, hwnd: int):
         self.hwnd = hwnd
-        self.post_click_wait_ms = post_click_wait_ms
-        self._held_keys: Dict[str, float] = {}  # key_name -> press_time
+        self._held_keys: Dict[str, float] = {}
 
     def press_key(self, key, down_time: float = 0.05):
-        """按下并松开按键
-
-        Args:
-            key: 按键名 ("W", "E", "space") 或虚拟键码
-            down_time: 按住时长（秒）
-        """
+        """按下并松开按键"""
         vk = key if isinstance(key, int) else resolve_vk(str(key))
         user32.PostMessageW(self.hwnd, WM_KEYDOWN, vk, 0)
         if down_time > 0:
             time.sleep(down_time)
         user32.PostMessageW(self.hwnd, WM_KEYUP, vk, 0)
-        time.sleep(self.post_click_wait_ms / 1000.0)
 
     def key_down(self, key):
-        """按住按键（不松开）"""
+        """按住按键"""
         if isinstance(key, int):
             vk = key
             key_name = str(vk)

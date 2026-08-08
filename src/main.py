@@ -69,14 +69,8 @@ class SBAuto:
         self.recognizer = Recognizer()
         self.ocr = OCR()
 
-        self.mouse = MouseClicker(
-            hwnd=self.screenshot.hwnd,
-            post_click_wait_ms=self.config.post_click_wait_ms,
-        )
-        self.keyboard = Keyboard(
-            hwnd=self.screenshot.hwnd,
-            post_click_wait_ms=self.config.post_click_wait_ms,
-        )
+        self.mouse = MouseClicker(hwnd=self.screenshot.hwnd)
+        self.keyboard = Keyboard(hwnd=self.screenshot.hwnd)
         self.controller = GameController(self.mouse, self.keyboard)
 
         cfg = self.config.data

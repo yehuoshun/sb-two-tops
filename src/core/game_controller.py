@@ -24,6 +24,8 @@ class GameController:
     def __init__(self, clicker: MouseClicker, keyboard: Keyboard):
         self.clicker = clicker
         self.keyboard = keyboard
+        self.retry_delay = 0.2  # 状态轮询间隔
+        self.retry_timeout = 5.0  # 单步超时
 
     # ── 鼠标动作 ──
 
