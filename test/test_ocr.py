@@ -48,10 +48,10 @@ def _load_image(path):
 
 
 def test_ocr(image, debug=False):
-    from rapidocr import RapidOCR
+    import easyocr
 
-    engine = RapidOCR()
-    result, _ = engine(image)
+    engine = easyocr.Reader(["ch_sim", "en"], gpu=False)
+    result = engine.readtext(image)
 
     if not result:
         print("❌ OCR 未识别到任何文字")
@@ -61,12 +61,12 @@ def test_ocr(image, debug=False):
 
     # 匹配目标
     found = {}
-    for box, text, score in result:
+    for bbox, text, score in result:
         text = text.strip()
         if not text:
             continue
-        xs = [p[0] for p in box]
-        ys = [p[1] for p in box]
+        xs = [p[0] for p in bbox]
+        ys = [p[1] for p in bbox]
         cx = int(sum(xs) / len(xs))
         cy = int(sum(ys) / len(ys))
 
@@ -95,7 +95,7 @@ def test_ocr(image, debug=False):
 
     # 全部结果
     if debug:
-        all_results = [(text, cx, cy, score) for box, text, score in result
+        all_results = [(text, cx, cy, score) for bbox, text, score in result
                        if (text := text.strip())]
         all_results.sort(key=lambda x: -x[3])
         print("\n=== 全部识别结果 ===")
