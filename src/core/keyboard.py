@@ -1,5 +1,5 @@
 """
-键盘模块 — keybd_event 前台键盘按键
+键盘模块 — SendInput 前台键盘按键
 
 仅处理键盘操作（press, hold, release）。
 无固定等待 — 调用方自行轮询状态。
@@ -17,23 +17,43 @@ logger = logging.getLogger("sb-two-tops.keyboard")
 user32: ctypes.WinDLL = ctypes.windll.user32
 
 
-# ── keybd_event 键盘 ──
-# Unity 游戏不吃 PostMessage 键盘消息，keybd_event 发真实输入
+# ── SendInput 键盘 ──
+# Unity 游戏不吃 PostMessage 键盘消息，用 SendInput 发真实输入
+
+
+INPUT_KEYBOARD = 1
+KEYEVENTF_KEYUP = 0x0002
 
 
 def _send_input_key(vk: int, key_down: bool):
-    """用 keybd_event 发送真实键盘事件（Unity 兼容）"""
+    """用 SendInput 发送真实键盘事件（Unity 兼容）"""
     try:
-        if key_down:
-            user32.keybd_event(vk, 0, 0, 0)
-        else:
-            user32.keybd_event(vk, 0, 2, 0)
+        # ctypes 结构体定义在函数内，避免前向引用问题
+        class _KeyInput(ctypes.Structure):
+            _fields_ = [
+                ("wVk", ctypes.c_ushort),
+                ("wScan", ctypes.c_ushort),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.c_void_p),
+            ]
+
+        class _KeyUnion(ctypes.Union):
+            _fields_ = [("ki", _KeyInput)]
+
+        class _InputWrap(ctypes.Structure):
+            _fields_ = [("type", ctypes.c_ulong), ("u", _KeyUnion)]
+
+        inp = _InputWrap()
+        inp.type = INPUT_KEYBOARD
+        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else KEYEVENTF_KEYUP, 0, ctypes.c_void_p(0))
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_InputWrap))
     except Exception as e:
-        logger.debug(f"keybd_event 失败: {e}")
+        logger.debug(f"SendInput 失败: {e}")
 
 
 class Keyboard:
-    """keybd_event 前台键盘操作器（Unity 兼容）"""
+    """SendInput 前台键盘操作器（Unity 兼容）"""
 
     def __init__(self, hwnd: int):
         _ = hwnd  # API 兼容，后期可能恢复 hwnd 绑定
