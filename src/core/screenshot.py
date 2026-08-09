@@ -36,7 +36,7 @@ class Screenshot:
             return True
         try:
             import mss
-            self._sct = mss.mss()
+            self._sct = mss.MSS()
             logger.info("MSS 初始化成功")
             return True
         except ImportError:
