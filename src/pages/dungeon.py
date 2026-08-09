@@ -36,24 +36,28 @@ class DungeonSelectPage(BasePage):
         self._scroll_attempt = 0
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在副本选择页 — 图标行约2个，OCR 兜底"""
+        """检测是否在副本选择页 — 图标行数量配合 OCR 兜底"""
         count = self.recognizer.count_icons_in_row(screenshot)
-        if 1 <= count <= 3:
-            logger.debug(f"dungeon.detect: icons={count} in [1,3] -> True")
+        # 副本页图标行通常很多（grid 图标），主城 8 个左右
+        # 这里只看图标行是否存在，不作为主要判断依据
+        if count >= 4:
+            logger.debug(f"dungeon.detect: icons={count} >= 4 -> 图标行存在")
             return True
-        logger.debug(f"dungeon.detect: icons={count} not in [1,3] -> False")
+        logger.debug(f"dungeon.detect: icons={count} < 4 -> False")
         return False
 
     def detect_ocr(self, ocr, screenshot) -> bool:
-        """OCR 检测 tab 栏是否有委托/夜航手册等文字"""
-        tab_region = (100, 190, 200, 60)  # x, y, w, h — 只检测第一个子 tab
-        result = ocr.find_text(screenshot, "委托", min_score=0.3,
-                               region=tab_region)
-        if result:
-            cx, cy, score = result
-            logger.debug(f"dungeon.detect_ocr: 委托 @ ({cx},{cy}) score={score:.3f} -> True")
-            return True
-        logger.debug("dungeon.detect_ocr: 未找到 委托 -> False")
+        """OCR 检测顶部 tab 栏是否有委托/夜航手册等文字"""
+        # 顶部 tab 栏区域（x=150-600, y=30-120）
+        tab_region = (150, 30, 450, 90)
+        for keyword in ["委托", "夜航手册", "委托密函", "悬赏委托"]:
+            result = ocr.find_text(screenshot, keyword, min_score=0.3,
+                                   region=tab_region)
+            if result:
+                cx, cy, score = result
+                logger.debug(f"dungeon.detect_ocr: {keyword} @ ({cx},{cy}) score={score:.3f} -> True")
+                return True
+        logger.debug("dungeon.detect_ocr: 未找到 tab 关键词 -> False")
         return False
 
     def select_tab(self, clicker, tab_name: str = "委托"):
