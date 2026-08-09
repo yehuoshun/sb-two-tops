@@ -73,23 +73,28 @@ class MouseClicker:
         user32.SetCursorPos(x, y)
         time.sleep(0.02)
 
-    def scroll(self, delta: int = -120, x: int = 0, y: int = 0):
-        """滚动鼠标滚轮（SendInput + PostMessageW 兜底）
+    def scroll(self, delta: int = -120, x: int = 0, y: int = 0, times: int = 1):
+        """滚动鼠标滚轮（PostMessageW 后台 + SendInput 兜底）
 
         Args:
-            delta: 滚动量，负值向下，正值向上，默认 -120
-            x: 光标移到该 X 坐标后再滚动
-            y: 光标移到该 Y 坐标后再滚动
+            delta: 单次滚动量，负值向下，正值向上，默认 -120
+            x: 滚动区域 X（窗口客户区坐标）
+            y: 滚动区域 Y（窗口客户区坐标）
+            times: 重复次数，默认 1
         """
-        # Unity 游戏需要光标在滚动区域上
-        if x or y:
-            self.move_to(x, y)
+        sx, sy = self._scale(x, y) if x or y else (0, 0)
 
-        _send_input_scroll(delta)
-        wparam = (delta << 16) & 0xFFFF0000
-        lparam = make_lparam(x, y)
-        user32.PostMessageW(self.hwnd, wm_mouse_wheel, wparam, lparam)
-        time.sleep(0.03)  # 仅消抖
+        for _ in range(times):
+            # 通道1: PostMessageW 到子窗口（后台可用）
+            target = self._resolve_child(sx, sy) if (sx or sy) else self.hwnd
+            wparam = (delta << 16) & 0xFFFF0000
+            lparam = make_lparam(sx, sy)
+            user32.PostMessageW(target, wm_mouse_wheel, wparam, lparam)
+
+            # 通道2: SendInput 系统级滚轮（光标需在窗口上）
+            _send_input_scroll(delta)
+
+            time.sleep(0.03)
 
     def _scale(self, x: int, y: int) -> Tuple[int, int]:
         return int(x * self.scale_x), int(y * self.scale_y)

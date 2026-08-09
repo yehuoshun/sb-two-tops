@@ -241,7 +241,7 @@ def main():
             break
 
         logger.debug(f"未找到 {target}，向下滚动 尝试={attempt}/5")
-        controller.scroll(-480, 600, 800)
+        controller.scroll(-120, 600, 800, times=4)
         time.sleep(0.3)
 
     if not found:

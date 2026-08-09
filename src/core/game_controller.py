@@ -30,8 +30,8 @@ class GameController:
     def click(self, x: int, y: int, button: str = "left"):
         self.clicker.click(x, y, button)
 
-    def scroll(self, delta: int = -120, x: int = 0, y: int = 0):
-        self.clicker.scroll(delta, x, y)
+    def scroll(self, delta: int = -120, x: int = 0, y: int = 0, times: int = 1):
+        self.clicker.scroll(delta, x, y, times)
 
     def attack(self):
         """攻击（左键单击）"""
