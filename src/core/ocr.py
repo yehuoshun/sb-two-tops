@@ -57,9 +57,13 @@ class OCR:
                     return self.read(image)
             return []
 
-        txts = getattr(result, 'txts', None)
-        boxes = getattr(result, 'boxes', None)
-        scores = getattr(result, 'scores', None)
+        try:
+            txts = result.txts
+            boxes = result.boxes
+            scores = result.scores
+        except AttributeError:
+            return []
+
         if not txts or boxes is None or scores is None:
             return []
 
