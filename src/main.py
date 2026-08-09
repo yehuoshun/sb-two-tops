@@ -89,28 +89,46 @@ class SBAuto:
     def _capture(self):
         return self.screenshot.capture()
 
+    def _wait_until(self, check_fn, timeout=10, interval=0.3):
+        """轮询截图直到条件满足，返回 (ok, last_screenshot)"""
+        start = time.time()
+        while time.time() - start < timeout:
+            img = self._capture()
+            if img is None:
+                time.sleep(interval)
+                continue
+            if check_fn(img):
+                return True, img
+            time.sleep(interval)
+        return False, self._capture()
+
+    # ── 页面检测 ──
+
     def _identify(self, screenshot) -> PageState:
-        # 结算页 OCR 优先
+        # 结算页 OCR 优先（最独特，容易误判为其他页）
         if self.dungeon.is_settlement_page(screenshot):
             logger.debug("identify -> SETTLEMENT")
             return PageState.SETTLEMENT
 
-        if self.home.detect(screenshot):
-            logger.debug("identify -> HOME")
-            return PageState.HOME
-
-        # 战斗页 OCR 检测（兜底不依赖模板匹配）
-        if self.dungeon.is_battle_page(screenshot):
-            logger.debug("identify -> IN_DUNGEON")
-            return PageState.IN_DUNGEON
-
+        # 确认页 OCR（"开始挑战" 只在确认页出现）
         if self.dungeon.is_confirm_page(screenshot):
             logger.debug("identify -> CONFIRM")
             return PageState.CONFIRM
 
+        # 副本选择页 OCR（"委托" tab 文字）
         if self.dungeon_select.detect_ocr(self.ocr, screenshot):
             logger.debug("identify -> DUNGEON_SELECT")
             return PageState.DUNGEON_SELECT
+
+        # 战斗页 OCR（"当前轮次" 等战斗文字）
+        if self.dungeon.is_battle_page(screenshot):
+            logger.debug("identify -> IN_DUNGEON")
+            return PageState.IN_DUNGEON
+
+        # 主城（图标计数，放最后避免误判菜单页）
+        if self.home.detect(screenshot):
+            logger.debug("identify -> HOME")
+            return PageState.HOME
 
         # 画面偏暗 → 可能加载中
         if screenshot is not None and screenshot.mean() < 30:
@@ -125,35 +143,67 @@ class SBAuto:
             self._unknown_count = 0
         if new_state != self.state:
             # 退出战斗状态时重置战斗计时
-            if self.state == PageState.IN_DUNGEON and new_state != PageState.IN_DUNGEON:
+            if self.state == PageState.IN_DUNGEON:
                 self._battle_start = 0.0
             logger.info(f"状态切换: {self.state.name} → {new_state.name}")
             self.state = new_state
+
+    # ── 各状态处理 ──
 
     def _handle_home(self, screenshot):
         logger.info("主城 → 前往副本")
         self.home.enter_dungeon(self.controller)
         self.dungeon.reset_scroll()
-        time.sleep(2)
+
+        # 等待副本页出现（最多 5s）
+        ok, img = self._wait_until(
+            lambda i: self.dungeon_select.detect_ocr(self.ocr, i),
+            timeout=5, interval=0.3,
+        )
+        if ok:
+            logger.info("已进入副本选择页")
+        else:
+            logger.warning("按L后未检测到副本页，可能仍需等待")
 
     def _handle_dungeon_select(self, screenshot):
-        logger.info(f"副本选择 → 选择 {self.target}")
+        logger.info(f"副本选择 → 选择 [{self.target}]")
         ok = self.dungeon.select(screenshot)
         if ok:
-            time.sleep(1.5)
+            # 点击扼守后等确认页出现
+            logger.info(f"[{self.target}] 已点击，等待确认页")
+            ok, _ = self._wait_until(
+                lambda i: self.dungeon.is_confirm_page(i),
+                timeout=5, interval=0.3,
+            )
+            if ok:
+                logger.info("确认页已出现")
+                # 选难度
+                self.dungeon.select_difficulty(screenshot)
+                time.sleep(0.5)
+            else:
+                logger.warning("点击扼守后未检测到确认页，继续")
         else:
-            time.sleep(1.5)
+            # 没找到，下一轮继续滚动
+            time.sleep(0.5)
 
     def _handle_confirm(self, screenshot):
         ok = self.dungeon.confirm(screenshot)
         if ok:
             self._loading_start = time.time()
             logger.info("确认进入，等待加载")
+            # 等待画面变化（不再是确认页）
+            ok, _ = self._wait_until(
+                lambda i: not self.dungeon.is_confirm_page(i),
+                timeout=5, interval=0.3,
+            )
+            if ok:
+                logger.info("确认页已消失，进入加载/战斗")
+            else:
+                logger.warning("确认页未消失，可能没点到")
         else:
             logger.warning("确认按钮未找到，点击画面中央")
             self.controller.click(960, 800)
             self._loading_start = time.time()
-        time.sleep(2)
 
     def _handle_loading(self):
         elapsed = time.time() - self._loading_start
@@ -202,13 +252,25 @@ class SBAuto:
             return False
 
         ok = self.dungeon.settlement(screenshot)
-        if not ok:
+        if ok:
+            logger.info("结算按钮已点击")
+            # 等待页面变化（不再是结算页）
+            ok, _ = self._wait_until(
+                lambda i: not self.dungeon.is_settlement_page(i),
+                timeout=5, interval=0.3,
+            )
+            if ok:
+                logger.info("结算页已消失")
+            else:
+                logger.warning("结算页未消失，可能没点到")
+        else:
             logger.warning("结算按钮未找到，尝试点击画面中央")
             self.controller.click(960, 600)
             time.sleep(1)
             self.controller.click(960, 800)
-        time.sleep(2)
         return True
+
+    # ── 主循环 ──
 
     def run(self):
         logger.info("=" * 40)
