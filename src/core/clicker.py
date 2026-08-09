@@ -116,25 +116,35 @@ class MouseClicker:
             self.hwnd, pt, cwp_skip_invisible | cwp_skip_transparent)
         return child if child else self.hwnd
 
-    def click(self, x: int, y: int, button: str = "left"):
-        """在指定坐标点击（后台 PostMessage）"""
-        sx, sy = self._scale(x, y)
-        target = self._resolve_child(sx, sy)
-        lparam = make_lparam(sx, sy)
-
-        logger.debug(f"click: ({x},{y}) -> scaled ({sx},{sy}) hwnd={target} btn={button}")
-
-        user32.PostMessageW(target, wm_mouse_move, 0, lparam)
+    def _send_click(self, hwnd: int, x: int, y: int, button: str):
+        """向指定窗口发送点击消息"""
+        lparam = make_lparam(x, y)
+        user32.PostMessageW(hwnd, wm_mouse_move, 0, lparam)
         time.sleep(0.02)
 
         if button == "left":
-            user32.PostMessageW(target, wm_left_button_down, mk_left_button, lparam)
+            user32.PostMessageW(hwnd, wm_left_button_down, mk_left_button, lparam)
             time.sleep(0.03)
-            user32.PostMessageW(target, wm_left_button_up, 0, lparam)
+            user32.PostMessageW(hwnd, wm_left_button_up, 0, lparam)
         else:
-            user32.PostMessageW(target, wm_right_button_down, 0, lparam)
+            user32.PostMessageW(hwnd, wm_right_button_down, 0, lparam)
             time.sleep(0.03)
-            user32.PostMessageW(target, wm_right_button_up, 0, lparam)
+            user32.PostMessageW(hwnd, wm_right_button_up, 0, lparam)
+
+    def click(self, x: int, y: int, button: str = "left"):
+        """在指定坐标点击（双通道：子窗口 + 主窗口）"""
+        sx, sy = self._scale(x, y)
+        child = self._resolve_child(sx, sy)
+        lparam = make_lparam(sx, sy)
+
+        logger.debug(f"click: ({x},{y}) -> scaled ({sx},{sy}) child={child} main={self.hwnd} btn={button}")
+
+        # 通道1: 发到子窗口（Unity 通常有 UnityWndClass 子窗口）
+        self._send_click(child, sx, sy, button)
+
+        # 通道2: 也发到主窗口（有些游戏主窗口处理点击）
+        if child != self.hwnd:
+            self._send_click(self.hwnd, sx, sy, button)
 
     def mouse_down(self, button: str = "left"):
         """发送鼠标按下消息"""
