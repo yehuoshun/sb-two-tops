@@ -38,7 +38,7 @@ user32.ChildWindowFromPointEx.restype = ctypes.wintypes.HWND
 
 
 # noinspection SpellCheckingInspection
-def _sendinput_scroll(delta: int):
+def _send_input_scroll(delta: int):
     """用 SendInput 模拟真实滚轮事件"""
     try:
         from ctypes import c_uint
@@ -90,7 +90,7 @@ class MouseClicker:
         if x or y:
             self.move_to(x, y)
 
-        _sendinput_scroll(delta)
+        _send_input_scroll(delta)
         wparam = (delta << 16) & 0xFFFF0000
         lparam = make_lparam(x, y)
         user32.PostMessageW(self.hwnd, WM_MOUSEWHEEL, wparam, lparam)
