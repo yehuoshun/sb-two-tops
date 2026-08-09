@@ -45,12 +45,11 @@ class DungeonSelectPage(BasePage):
 
     def detect_ocr(self, ocr, screenshot) -> bool:
         """OCR 检测 tab 栏是否有委托/夜航手册等文字"""
-        tab_region = (100, 190, 400, 60)  # x, y, w, h
-        for keyword in ["委托", "夜航手册", "委托密函", "悬赏委托"]:
-            result = ocr.find_text(screenshot, keyword, min_score=0.3,
-                                   region=tab_region)
-            if result:
-                return True
+        tab_region = (100, 190, 200, 60)  # x, y, w, h — 只检测第一个子 tab
+        result = ocr.find_text(screenshot, "委托", min_score=0.3,
+                               region=tab_region)
+        if result:
+            return True
         return False
 
     def select_tab(self, clicker, tab_name: str = "委托"):

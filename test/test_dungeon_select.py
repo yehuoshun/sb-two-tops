@@ -114,6 +114,14 @@ def main():
                 controller.click(r[0], r[1])
                 time.sleep(1.5)
                 img = ss.capture()
+                # 再点子 tab 的委托（第一个，确保进入副本列表而非悬赏委托）
+                if img is not None:
+                    r2 = ocr.find_text(img, "委托", min_score=0.3, region=(100, 190, 200, 60))
+                    if r2:
+                        print("  sub-tab: 委托")
+                        controller.click(r2[0], r2[1])
+                        time.sleep(1.5)
+                        img = ss.capture()
             else:
                 _dismiss_esc(ss, ocr, esc_menu, controller)
                 print("  retry L")
