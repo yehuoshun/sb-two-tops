@@ -17,12 +17,13 @@ _RAPIDOCR_OUTPUT = None
 
 def _get_rapidocr_output():
     global _RAPIDOCR_OUTPUT
-    if _RAPIDOCR_OUTPUT is None:
-        try:
-            from rapidocr.utils.output import RapidOCROutput
-            _RAPIDOCR_OUTPUT = RapidOCROutput
-        except ImportError:
-            pass
+    if _RAPIDOCR_OUTPUT is not None:
+        return _RAPIDOCR_OUTPUT
+    try:
+        from rapidocr.utils.output import RapidOCROutput
+        _RAPIDOCR_OUTPUT = RapidOCROutput
+    except ImportError:
+        _RAPIDOCR_OUTPUT = None
     return _RAPIDOCR_OUTPUT
 
 logger = logging.getLogger("sb-two-tops.ocr")
