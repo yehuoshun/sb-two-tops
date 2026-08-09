@@ -57,11 +57,14 @@ class OCR:
                     return self.read(image)
             return []
 
-        if not hasattr(result, 'txts') or result.txts is None or result.boxes is None or result.scores is None or len(result) == 0:
+        txts = getattr(result, 'txts', None)
+        boxes = getattr(result, 'boxes', None)
+        scores = getattr(result, 'scores', None)
+        if txts is None or boxes is None or scores is None or len(txts) == 0:
             return []
 
         parsed = []
-        for box, text, score in zip(result.boxes, result.txts, result.scores):
+        for box, text, score in zip(boxes, txts, scores):
             if not text or score is None:
                 continue
             xs = [p[0] for p in box]
