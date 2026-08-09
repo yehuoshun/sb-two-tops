@@ -20,8 +20,8 @@ def _get_rapidocr_output():
     if _RAPIDOCR_OUTPUT is not None:
         return _RAPIDOCR_OUTPUT
     try:
-        from rapidocr.utils.output import RapidOCROutput
-        _RAPIDOCR_OUTPUT = RapidOCROutput
+        import rapidocr.utils.output as _rapidocr_output
+        _RAPIDOCR_OUTPUT = _rapidocr_output.RapidOCROutput
     except ImportError:
         _RAPIDOCR_OUTPUT = None
     return _RAPIDOCR_OUTPUT
