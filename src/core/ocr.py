@@ -43,6 +43,17 @@ class OCR:
         self._engine = self._create_engine()
         return self._engine is not None
 
+    @staticmethod
+    def _extract(result):
+        """从 RapidOCR 结果中提取文本、坐标、置信度"""
+        try:
+            txts = getattr(result, 'txts', None)
+            boxes = getattr(result, 'boxes', None)
+            scores = getattr(result, 'scores', None)
+        except Exception:
+            return None, None, None
+        return txts, boxes, scores
+
     def read(self, image) -> List[Tuple[str, int, int, float]]:
         if self._engine is None:
             return []
@@ -57,25 +68,24 @@ class OCR:
                     return self.read(image)
             return []
 
-        try:
-            txts = result.txts
-            boxes = result.boxes
-            scores = result.scores
-        except AttributeError:
-            return []
-
+        txts, boxes, scores = self._extract(result)
         if not txts or boxes is None or scores is None:
             return []
 
+        # 转成纯列表，避免 PyCharm 类型推断问题
+        items = [
+            (text.strip(), box, float(score))
+            for text, box, score in zip(txts, boxes, scores)
+            if text and score is not None
+        ]
+
         parsed = []
-        for box, text, score in zip(boxes, txts, scores):
-            if not text or score is None:
-                continue
+        for text, box, score in items:
             xs = [p[0] for p in box]
             ys = [p[1] for p in box]
             cx = int(sum(xs) / len(xs))
             cy = int(sum(ys) / len(ys))
-            parsed.append((text.strip(), cx, cy, float(score)))
+            parsed.append((text, cx, cy, score))
 
         parsed.sort(key=lambda x: -x[3])
         return parsed
