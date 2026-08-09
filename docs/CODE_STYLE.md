@@ -5,7 +5,7 @@
 - 类名：CamelCase（如 `HomePage`）
 - 函数：snake_case（如 `make_lparam`）
 - 变量：snake_case（如 `post_click_wait_ms`）
-- 常量：camelCase（如 `wmLeftButtonDown`），避免 UPPER_CASE 触发拼写检查
+- 常量：snake_case（如 `wm_left_button_down`）
 - 受保护成员：`_leading_underscore`（如 `_handle_battle`）
 - 注释、commit message 用中文
 - **禁止使用 `# noinspection` 注释跳过拼写检查**
