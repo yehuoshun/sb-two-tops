@@ -112,14 +112,16 @@ class Screenshot:
         except Exception:
             pass
 
-        # 3. AttachThreadInput
+        # 3. AttachThreadInput (用 ctypes 绕开 pywin32 类型存根缺失)
         try:
-            game_tid = win32gui.GetWindowThreadProcessId(self.hwnd)[0]
-            cur_tid = win32gui.GetWindowThreadProcessId(0)[0]
-            if game_tid != cur_tid:
-                user32.AttachThreadInput(cur_tid, game_tid, True)
+            game_tid = ctypes.c_ulong()
+            cur_tid = ctypes.c_ulong()
+            user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(game_tid))
+            user32.GetWindowThreadProcessId(0, ctypes.byref(cur_tid))
+            if game_tid.value != cur_tid.value:
+                user32.AttachThreadInput(cur_tid.value, game_tid.value, True)
                 win32gui.SetForegroundWindow(self.hwnd)
-                user32.AttachThreadInput(cur_tid, game_tid, False)
+                user32.AttachThreadInput(cur_tid.value, game_tid.value, False)
                 return True
         except Exception:
             pass
