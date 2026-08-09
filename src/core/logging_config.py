@@ -65,7 +65,8 @@ def _log_dir() -> Path:
 
 def _log_file_path() -> Path:
     today = datetime.now().strftime("%Y-%m-%d")
-    return _log_dir() / f"sb-two-tops_{today}.log"
+    sid = _session_id()
+    return _log_dir() / f"sb-two-tops_{today}_{sid}.log"
 
 
 def setup_logging(
