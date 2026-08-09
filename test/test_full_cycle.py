@@ -125,14 +125,14 @@ def main():
     def get_page_label(img):
         if is_settlement_page(img):
             return "SETTLEMENT"
-        if is_home_page(img):
-            return "HOME"
-        if is_battle_page(img):
-            return "BATTLE"
         if is_confirm_page(img):
             return "CONFIRM"
         if is_dungeon_page(img):
             return "DUNGEON_SELECT"
+        if is_battle_page(img):
+            return "BATTLE"
+        if is_home_page(img):
+            return "HOME"
         if img is not None and img.mean() < 30:
             return "LOADING(DARK)"
         return "UNKNOWN"
@@ -198,11 +198,19 @@ def main():
     logger.info("─" * 50)
     logger.info(f"Step 2/6: 选择副本 [{target}]")
 
-    # 重新检测当前页面
-    img = ss.capture()
-    if img is None:
-        logger.error("截图失败")
-        sys.exit(1)
+    # 确保在副本选择页（用 _wait_until 重试，防止页面跳变）
+    ok, img = _wait_until(ss, lambda i: is_dungeon_page(i) or is_confirm_page(i), timeout=3)
+    if not ok:
+        # 可能回了主城，尝试再按 L
+        logger.warning("未检测到副本页/确认页，尝试重新按 L")
+        ss.bring_to_foreground()
+        controller.press_key("L", down_time=0.1)
+        ok, img = _wait_until(ss, is_dungeon_page, timeout=5)
+        if not ok:
+            _save_debug_screenshot(img, "step2_fail_not_dungeon")
+            logger.error("无法进入副本选择页")
+            sys.exit(1)
+
     page = get_page_label(img)
     logger.info(f"当前页面: {page}")
 
@@ -230,7 +238,6 @@ def main():
         if not found:
             _save_debug_screenshot(img, "step2_fail_not_found")
             logger.error(f"未找到 [{target}]（已滚动 {dungeon.max_scroll} 次）")
-            # 全屏 OCR dump 帮助定位
             dump = ocr.read(img)
             logger.info(f"画面 OCR 结果 ({len(dump)} 条):")
             for text, cx, cy, score in dump[:30]:
@@ -239,36 +246,34 @@ def main():
                 logger.info(f"  ... 还有 {len(dump)-30} 条")
             sys.exit(1)
 
-        # 点击扼守后等画面变化
-        time.sleep(1.5)
-        img = ss.capture()
-        if img is not None:
-            _diagnose_screenshot(recognizer, img, "step2_after_click")
-        page = get_page_label(img)
-        logger.info(f"点击后页面: {page}")
-
-        # 选择难度
-        logger.info(f"Step 2b: 选择难度 [{difficulty}]")
-        time.sleep(1.0)
-        img = ss.capture()
-        if img is not None:
-            _diagnose_screenshot(recognizer, img, "step2b_difficulty")
-
-        def check_difficulty(img):
-            return dungeon.select_difficulty(img)
-
-        ok, diff_img = _wait_until(ss, check_difficulty, timeout=5)
+        # 点击扼守后等确认页出现
+        logger.info(f"[{target}] 已点击，等待确认页")
+        ok, img = _wait_until(ss, is_confirm_page, timeout=5, interval=0.3)
         if ok:
+            logger.info("确认页已出现")
+            _diagnose_screenshot(recognizer, img, "step2_after_click")
+            # 选难度
+            logger.info(f"Step 2b: 选择难度 [{difficulty}]")
             time.sleep(0.5)
-            logger.info(f"难度 [{difficulty}] 已选择")
+
+            def check_difficulty(img):
+                return dungeon.select_difficulty(img)
+
+            ok2, diff_img = _wait_until(ss, check_difficulty, timeout=5)
+            if ok2:
+                time.sleep(0.5)
+                logger.info(f"难度 [{difficulty}] 已选择")
+            else:
+                if diff_img is not None:
+                    _save_debug_screenshot(diff_img, "step2b_fail_difficulty")
+                    dump = ocr.read(diff_img)
+                    logger.info(f"难度选择后 OCR ({len(dump)} 条):")
+                    for text, cx, cy, score in dump[:20]:
+                        logger.info(f"  \"{text}\" @ ({cx},{cy}) score={score:.3f}")
+                logger.warning(f"未找到难度 [{difficulty}]，可能已选中")
         else:
-            if diff_img is not None:
-                _save_debug_screenshot(diff_img, "step2b_fail_difficulty")
-                dump = ocr.read(diff_img)
-                logger.info(f"难度选择后 OCR ({len(dump)} 条):")
-                for text, cx, cy, score in dump[:20]:
-                    logger.info(f"  \"{text}\" @ ({cx},{cy}) score={score:.3f}")
-            logger.warning(f"未找到难度 [{difficulty}]，可能已选中")
+            logger.warning("点击扼守后未检测到确认页")
+            _save_debug_screenshot(img, "step2_no_confirm_after_click")
 
     elif page == "CONFIRM":
         logger.info("已在确认页，跳过选择步骤")
