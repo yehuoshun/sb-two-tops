@@ -52,6 +52,9 @@ class OCR:
             scores = getattr(result, 'scores', None)
         except Exception:
             return None, None, None
+        # 确保 None 被正确返回，PyCharm 类型推断用
+        if txts is None:
+            return None, None, None
         return txts, boxes, scores
 
     def read(self, image) -> List[Tuple[str, int, int, float]]:
@@ -72,20 +75,15 @@ class OCR:
         if not txts or boxes is None or scores is None:
             return []
 
-        # 转成纯列表，避免 PyCharm 类型推断问题
-        items = [
-            (text.strip(), box, float(score))
-            for text, box, score in zip(txts, boxes, scores)
-            if text and score is not None
-        ]
-
         parsed = []
-        for text, box, score in items:
+        for text, box, score in zip(txts, boxes, scores):
+            if not text or score is None:
+                continue
             xs = [p[0] for p in box]
             ys = [p[1] for p in box]
             cx = int(sum(xs) / len(xs))
             cy = int(sum(ys) / len(ys))
-            parsed.append((text, cx, cy, score))
+            parsed.append((text.strip(), cx, cy, score))
 
         parsed.sort(key=lambda x: -x[3])
         return parsed
