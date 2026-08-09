@@ -12,7 +12,7 @@ import time
 from typing import Dict
 
 from src.core.constants import (
-    WM_KEYDOWN, WM_KEYUP, resolve_vk,
+    wmKeyDown, wmKeyUp, resolveVk,
 )
 
 logger = logging.getLogger("sb-two-tops.keyboard")
@@ -35,11 +35,11 @@ class Keyboard:
 
     def press_key(self, key, down_time: float = 0.05):
         """按下并松开按键"""
-        vk = key if isinstance(key, int) else resolve_vk(str(key))
-        user32.PostMessageW(self.hwnd, WM_KEYDOWN, vk, 0)
+        vk = key if isinstance(key, int) else resolveVk(str(key))
+        user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         if down_time > 0:
             time.sleep(down_time)
-        user32.PostMessageW(self.hwnd, WM_KEYUP, vk, 0)
+        user32.PostMessageW(self.hwnd, wmKeyUp, vk, 0)
 
     def key_down(self, key):
         """按住按键"""
@@ -47,9 +47,9 @@ class Keyboard:
             vk = key
             key_name = str(vk)
         else:
-            vk = resolve_vk(str(key))
+            vk = resolveVk(str(key))
             key_name = str(key).lower()
-        user32.PostMessageW(self.hwnd, WM_KEYDOWN, vk, 0)
+        user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         self._held_keys[key_name] = time.time()
 
     def key_up(self, key):
@@ -58,17 +58,17 @@ class Keyboard:
             vk = key
             key_name = str(vk)
         else:
-            vk = resolve_vk(str(key))
+            vk = resolveVk(str(key))
             key_name = str(key).lower()
-        user32.PostMessageW(self.hwnd, WM_KEYUP, vk, 0)
+        user32.PostMessageW(self.hwnd, wmKeyUp, vk, 0)
         self._held_keys.pop(key_name, None)
 
     def hold_key(self, key, duration: float):
         """按住按键一段时间后松开"""
-        vk = key if isinstance(key, int) else resolve_vk(str(key))
-        user32.PostMessageW(self.hwnd, WM_KEYDOWN, vk, 0)
+        vk = key if isinstance(key, int) else resolveVk(str(key))
+        user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         time.sleep(duration)
-        user32.PostMessageW(self.hwnd, WM_KEYUP, vk, 0)
+        user32.PostMessageW(self.hwnd, wmKeyUp, vk, 0)
 
     def release_all(self):
         """松开所有按住的按键"""
