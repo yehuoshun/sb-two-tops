@@ -320,7 +320,8 @@ def main():
             is_home = home.detect(after)
             is_dungeon = is_dungeon_page(after)
             is_confirm = dungeon.is_confirm_page(after)
-            logger.info(f"点击后页面: settlement={is_settle} battle={is_battle} home={is_home} dungeon={is_dungeon} confirm={is_confirm}")
+            logger.info(f"点击后页面: settle={is_settle} battle={is_battle} "
+                         f"home={is_home} dungeon={is_dungeon} confirm={is_confirm}")
             if is_dungeon or is_confirm:
                 logger.warning("仍在副本/确认页，点开始挑战可能没生效")
     else:
