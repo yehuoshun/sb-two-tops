@@ -58,9 +58,9 @@ class OCR:
 
         # 从 RapidOCROutput 提取数据
         try:
-            texts = result.txts
-            boxes = result.boxes
-            scores = result.scores
+            texts = result.txts  # type: ignore[union-attr]
+            boxes = result.boxes  # type: ignore[union-attr]
+            scores = result.scores  # type: ignore[union-attr]
         except AttributeError:
             return []
 
