@@ -91,10 +91,21 @@ def main():
         print("FAIL: capture")
         sys.exit(1)
 
+    # 截图诊断
+    icon_count = recognizer.count_icons_in_row(img)
+    print(f"  截图: {img.shape[1]}x{img.shape[0]} 图标行={icon_count} img.mean={img.mean():.0f}")
+
     is_esc = esc_menu.detect_ocr(ocr, img)
     is_home = home.detect(img)
     is_dungeon = is_dungeon_page(img)
     print(f"  页面检测: home={is_home} dungeon={is_dungeon} esc={is_esc}")
+
+    if not is_home and not is_dungeon and not is_esc:
+        # 保存调试截图
+        import cv2
+        debug_path = f"debug_{int(time.time())}.png"
+        cv2.imwrite(debug_path, img)
+        print(f"  DEBUG: 截图已保存到 {debug_path}")
 
     if is_esc:
         print("  ESC menu -> close")
