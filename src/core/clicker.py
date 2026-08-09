@@ -53,12 +53,12 @@ def _sendinput_scroll(delta: int):
         class INPUT(ctypes.Structure):
             _fields_ = [("type", DWORD), ("mi", MOUSEINPUT)]
 
-        INPUT_MOUSE = 0
-        MOUSEEVENTF_WHEEL = 0x0800
+        input_mouse = 0
+        mouseeventf_wheel = 0x0800
 
         inp = INPUT()
-        inp.type = INPUT_MOUSE
-        inp.mi = MOUSEINPUT(0, 0, delta, MOUSEEVENTF_WHEEL, 0, ctypes.c_void_p(0))
+        inp.type = input_mouse
+        inp.mi = MOUSEINPUT(0, 0, delta, mouseeventf_wheel, 0, ctypes.c_void_p(0))
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception as e:
         logger.debug(f"SendInput 滚轮失败: {e}")
