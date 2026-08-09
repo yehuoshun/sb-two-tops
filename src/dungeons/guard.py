@@ -15,6 +15,9 @@ class DungeonGuard(BaseDungeon):
     battle_interval = 2.0
     battle_timeout = 180.0
 
+    # 难度按钮在左侧垂直列表 (x≈24~160, y 随等级变化)
+    difficulty_region = (0, 200, 200, 350)  # x, y, w, h — 只搜左侧列
+
     # 确认页："开始挑战"按钮在右下角 (~1500, ~950)
     confirm_region = (1200, 800, 700, 250)  # x, y, w, h
     confirm_keywords = ["开始挑战", "开始", "挑战", "确认", "进入", "启程"]
