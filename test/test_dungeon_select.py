@@ -103,10 +103,10 @@ def main():
         # 等 1.5s 先检查一次，不行再等 1.5s
         time.sleep(1.5)
         img = ss.capture()
-        if img and not is_dungeon_page(img):
+        if img is not None and not is_dungeon_page(img):
             time.sleep(1.5)
             img = ss.capture()
-        if img and not is_dungeon_page(img):
+        if img is not None and not is_dungeon_page(img):
             # 可能进了导航页，点顶部委托 tab
             print("  tab: 委托")
             r = ocr.find_text(img, "委托", min_score=0.3, region=(200, 30, 500, 60))
@@ -120,7 +120,7 @@ def main():
                 controller.press_key("L", down_time=0.1)
                 time.sleep(2)
                 img = ss.capture()
-        if not img or not is_dungeon_page(img):
+        if img is None or not is_dungeon_page(img):
             print("FAIL: 无法进入副本页")
             sys.exit(1)
     elif is_dungeon_page(img):
