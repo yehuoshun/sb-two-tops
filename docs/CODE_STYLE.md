@@ -2,14 +2,13 @@
 
 ## 命名
 
-- 类名：CapWords（如 `HomePage`）
-- 函数/变量：snake_case（如 `click_continue`）
-- 常量：UPPER_CASE（如 `VK_Q`）
+- 类名：CamelCase（如 `HomePage`）
+- 函数：snake_case（如 `make_lparam`）
+- 变量：snake_case（如 `post_click_wait_ms`）
+- 常量：camelCase（如 `wmLeftButtonDown`），避免 UPPER_CASE 触发拼写检查
 - 受保护成员：`_leading_underscore`（如 `_handle_battle`）
 - 注释、commit message 用中文
-- **避免 PyCharm 拼写检查警告**：标识符必须由有效英文单词或驼峰组合构成。
-  Win32 API 常量需映射为驼峰命名，如 `WM_LBUTTONDOWN` → `wmLeftButtonDown`。
-  禁止使用 `# noinspection` 注释跳过拼写检查。
+- **禁止使用 `# noinspection` 注释跳过拼写检查**
 
 ## 代码风格（PyCharm 零警告规则）
 

@@ -55,12 +55,12 @@ cwpSkipInvisible = 0x0001
 cwpSkipTransparent = 0x0004
 
 
-def makeLparam(x: int, y: int) -> int:
+def make_lparam(x: int, y: int) -> int:
     """将坐标打包为 LPARAM"""
     return ((y & 0xFFFF) << 16) | (x & 0xFFFF)
 
 
-def resolveVk(keyName: str) -> int:
+def resolve_vk(keyName: str) -> int:
     """将按键名解析为虚拟键码"""
     key = keyName.strip().upper()
     if key in Vk:

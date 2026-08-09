@@ -20,7 +20,7 @@ from src.core.constants import (
     wmMouseMove, wmMouseWheel,
     mkLeftButton, mkMiddleButton,
     cwpSkipInvisible, cwpSkipTransparent,
-    makeLparam,
+    make_lparam,
 )
 
 logger = logging.getLogger("sb-two-tops.clicker")
@@ -87,7 +87,7 @@ class MouseClicker:
 
         _send_input_scroll(delta)
         wparam = (delta << 16) & 0xFFFF0000
-        lparam = makeLparam(x, y)
+        lparam = make_lparam(x, y)
         user32.PostMessageW(self.hwnd, wmMouseWheel, wparam, lparam)
         time.sleep(0.03)  # 仅消抖
 
@@ -104,7 +104,7 @@ class MouseClicker:
         """在指定坐标点击（后台 PostMessage）"""
         sx, sy = self._scale(x, y)
         target = self._resolve_child(sx, sy)
-        lparam = makeLparam(sx, sy)
+        lparam = make_lparam(sx, sy)
 
         user32.PostMessageW(target, wmMouseMove, 0, lparam)
         time.sleep(0.02)
@@ -120,7 +120,7 @@ class MouseClicker:
 
     def mouse_down(self, button: str = "left"):
         """发送鼠标按下消息"""
-        lparam = makeLparam(0, 0)
+        lparam = make_lparam(0, 0)
         if button == "left":
             user32.PostMessageW(self.hwnd, wmLeftButtonDown, mkLeftButton, lparam)
         elif button == "right":
@@ -130,7 +130,7 @@ class MouseClicker:
 
     def mouse_up(self, button: str = "left"):
         """发送鼠标松开消息"""
-        lparam = makeLparam(0, 0)
+        lparam = make_lparam(0, 0)
         if button == "left":
             user32.PostMessageW(self.hwnd, wmLeftButtonUp, 0, lparam)
         elif button == "right":

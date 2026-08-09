@@ -12,7 +12,7 @@ import time
 from typing import Dict
 
 from src.core.constants import (
-    wmKeyDown, wmKeyUp, resolveVk,
+    wmKeyDown, wmKeyUp, resolve_vk,
 )
 
 logger = logging.getLogger("sb-two-tops.keyboard")
@@ -35,7 +35,7 @@ class Keyboard:
 
     def press_key(self, key, down_time: float = 0.05):
         """按下并松开按键"""
-        vk = key if isinstance(key, int) else resolveVk(str(key))
+        vk = key if isinstance(key, int) else resolve_vk(str(key))
         user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         if down_time > 0:
             time.sleep(down_time)
@@ -47,7 +47,7 @@ class Keyboard:
             vk = key
             key_name = str(vk)
         else:
-            vk = resolveVk(str(key))
+            vk = resolve_vk(str(key))
             key_name = str(key).lower()
         user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         self._held_keys[key_name] = time.time()
@@ -58,14 +58,14 @@ class Keyboard:
             vk = key
             key_name = str(vk)
         else:
-            vk = resolveVk(str(key))
+            vk = resolve_vk(str(key))
             key_name = str(key).lower()
         user32.PostMessageW(self.hwnd, wmKeyUp, vk, 0)
         self._held_keys.pop(key_name, None)
 
     def hold_key(self, key, duration: float):
         """按住按键一段时间后松开"""
-        vk = key if isinstance(key, int) else resolveVk(str(key))
+        vk = key if isinstance(key, int) else resolve_vk(str(key))
         user32.PostMessageW(self.hwnd, wmKeyDown, vk, 0)
         time.sleep(duration)
         user32.PostMessageW(self.hwnd, wmKeyUp, vk, 0)
