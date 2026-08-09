@@ -43,7 +43,7 @@ def _send_input_scroll(delta: int):
         from ctypes import c_uint
         from ctypes.wintypes import DWORD, LONG, WORD
 
-        class MOUSEINPUT(ctypes.Structure):
+        class MOUSEINPUT(ctypes.Structure):  # noinspection SpellCheckingInspection
             _fields_ = [
                 ("dx", LONG), ("dy", LONG),
                 ("mouseData", DWORD), ("dwFlags", DWORD),
