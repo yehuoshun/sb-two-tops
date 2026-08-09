@@ -28,7 +28,6 @@ setup_logging()  # 在入口处调用一次
 
 import logging
 import logging.handlers
-import os
 import sys
 import uuid
 from datetime import datetime
@@ -53,9 +52,11 @@ _SESSION_ID: Optional[str] = None
 
 def _session_id() -> str:
     global _SESSION_ID
-    if _SESSION_ID is None:
-        _SESSION_ID = uuid.uuid4().hex[:8]
-    return _SESSION_ID
+    sid = _SESSION_ID
+    if sid is None:
+        sid = uuid.uuid4().hex[:8]
+        _SESSION_ID = sid
+    return sid
 
 
 def _log_dir() -> Path:
