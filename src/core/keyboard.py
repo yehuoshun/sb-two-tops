@@ -1,11 +1,11 @@
 """
-键盘模块 — SendInput 前台键盘按键
+键盘模块 — keybd_event 前台键盘按键
 
 仅处理键盘操作（press, hold, release）。
 无固定等待 — 调用方自行轮询状态。
 """
 
-import ctypes.wintypes
+import ctypes
 import logging
 import time
 from typing import Dict
@@ -17,45 +17,23 @@ logger = logging.getLogger("sb-two-tops.keyboard")
 user32: ctypes.WinDLL = ctypes.windll.user32
 
 
-# ── SendInput 键盘 ──
-# Unity 游戏不吃 PostMessage 键盘消息，需用 SendInput 发真实键盘事件
-
-
-class _KeyboardInput(ctypes.Structure):
-    _fields_ = [
-        ("wVk", ctypes.wintypes.WORD),
-        ("wScan", ctypes.wintypes.WORD),
-        ("dwFlags", ctypes.wintypes.DWORD),
-        ("time", ctypes.wintypes.DWORD),
-        ("dwExtraInfo", ctypes.c_void_p),
-    ]
-
-
-class _Input(ctypes.Structure):
-    _fields_ = [("type", ctypes.wintypes.DWORD), ("u", "_InputUnion")]
-
-
-class _InputUnion(ctypes.Union):
-    _fields_ = [("ki", _KeyboardInput)]
-
-
-INPUT_KEYBOARD = 1
-KEYEVENTF_KEYUP = 0x0002
+# ── keybd_event 键盘 ──
+# Unity 游戏不吃 PostMessage 键盘消息，keybd_event 发真实输入
 
 
 def _send_input_key(vk: int, key_down: bool):
-    """用 SendInput 发送真实键盘事件（Unity 兼容）"""
+    """用 keybd_event 发送真实键盘事件（Unity 兼容）"""
     try:
-        inp = _Input()
-        inp.type = INPUT_KEYBOARD
-        inp.u.ki = _KeyboardInput(vk, 0, 0 if key_down else KEYEVENTF_KEYUP, 0, ctypes.c_void_p(0))
-        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_Input))
+        if key_down:
+            user32.keybd_event(vk, 0, 0, 0)
+        else:
+            user32.keybd_event(vk, 0, 2, 0)
     except Exception as e:
-        logger.debug(f"SendInput 键盘失败: {e}")
+        logger.debug(f"keybd_event 失败: {e}")
 
 
 class Keyboard:
-    """SendInput 前台键盘操作器（Unity 兼容）"""
+    """keybd_event 前台键盘操作器（Unity 兼容）"""
 
     def __init__(self, hwnd: int):
         _ = hwnd  # API 兼容，后期可能恢复 hwnd 绑定
@@ -63,7 +41,7 @@ class Keyboard:
 
     @staticmethod
     def press_key(key, down_time: float = 0.05):
-        """按下并松开按键（SendInput，Unity 兼容）"""
+        """按下并松开按键"""
         vk = key if isinstance(key, int) else resolve_vk(str(key))
         _send_input_key(vk, True)
         if down_time > 0:
@@ -71,7 +49,7 @@ class Keyboard:
         _send_input_key(vk, False)
 
     def key_down(self, key):
-        """按住按键（SendInput，Unity 兼容）"""
+        """按住按键"""
         if isinstance(key, int):
             vk = key
             key_name = str(vk)
@@ -82,7 +60,7 @@ class Keyboard:
         self._held_keys[key_name] = time.time()
 
     def key_up(self, key):
-        """松开按键（SendInput，Unity 兼容）"""
+        """松开按键"""
         if isinstance(key, int):
             vk = key
             key_name = str(vk)
@@ -94,7 +72,7 @@ class Keyboard:
 
     @staticmethod
     def hold_key(key, duration: float):
-        """按住按键一段时间后松开（SendInput，Unity 兼容）"""
+        """按住按键一段时间后松开"""
         vk = key if isinstance(key, int) else resolve_vk(str(key))
         _send_input_key(vk, True)
         time.sleep(duration)
