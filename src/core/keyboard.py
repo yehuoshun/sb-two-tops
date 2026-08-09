@@ -42,7 +42,7 @@ def _send_input_key(vk: int, key_down: bool):
 
         inp = _InputWrap()
         inp.type = 1  # INPUT_KEYBOARD
-        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else 2, 0, ctypes.c_void_p(0))  # 2 = KEYEVENTF_KEYUP
+        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else 2, 0, ctypes.c_void_p(0))  # 2 = KEY_EVENTF_KEYUP
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_InputWrap))
         logger.debug(f"SendInput: vk=0x{vk:02X} {'down' if key_down else 'up'}")
     except Exception as e:
