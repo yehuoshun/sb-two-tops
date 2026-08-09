@@ -5,7 +5,6 @@
 无固定等待 — 调用方自行轮询状态。
 """
 
-import ctypes
 import ctypes.wintypes
 import logging
 import time
