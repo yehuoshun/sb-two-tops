@@ -163,11 +163,15 @@ def main():
         _dismiss_esc(ss, ocr, esc_menu, controller)
         time.sleep(0.5)
         img = ss.capture()
-        if img is not None:
-            diagnose_screenshot(img, "after_esc")
-        else:
+        if img is None:
             logger.error("ESC 关闭后截图失败")
             sys.exit(1)
+        diagnose_screenshot(img, "after_esc")
+        # 重新检测页面（ESC 关闭后页面变了）
+        is_esc = esc_menu.detect_ocr(ocr, img)
+        is_home = home.detect(img)
+        is_dungeon = is_dungeon_page(img)
+        logger.info(f"重新检测: home={is_home} dungeon={is_dungeon} esc={is_esc}")
 
     if is_home:
         logger.info("主城 -> 按 L 键")

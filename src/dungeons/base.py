@@ -90,13 +90,16 @@ class BaseDungeon:
         Returns:
             bool: 是否成功点击
         """
-        result = self.ocr.find_text(screenshot, self.difficulty, min_score=0.3,
-                                    region=self.difficulty_region)
-        if result:
-            cx, cy, score = result
-            logger.info(f"[{self.name}] 难度: {self.difficulty} @ ({cx}, {cy}) 置信度={score:.3f}")
-            self.controller.click(cx, cy)
-            return True
+        # 尝试多种难度关键词（不同 UI 可能显示不同）
+        keywords = [self.difficulty, "50", "Lv.50", "Level 50"]
+        for keyword in keywords:
+            result = self.ocr.find_text(screenshot, keyword, min_score=0.3,
+                                        region=self.difficulty_region)
+            if result:
+                cx, cy, score = result
+                logger.info(f"[{self.name}] 难度: {keyword} @ ({cx}, {cy}) 置信度={score:.3f}")
+                self.controller.click(cx, cy)
+                return True
 
         logger.warning(f"[{self.name}] 难度按钮未找到: {self.difficulty}")
         return False
