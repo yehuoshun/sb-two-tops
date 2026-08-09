@@ -50,7 +50,7 @@ class OCR:
             txts = getattr(result, 'txts', None)
             boxes = getattr(result, 'boxes', None)
             scores = getattr(result, 'scores', None)
-        except Exception:
+        except AttributeError:
             return None, None, None
         # 确保 None 被正确返回，PyCharm 类型推断用
         if txts is None:
