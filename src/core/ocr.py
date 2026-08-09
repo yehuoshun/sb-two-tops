@@ -47,9 +47,9 @@ class OCR:
     def _extract(result):
         """从 RapidOCR 结果中提取文本、坐标、置信度"""
         try:
-            texts = getattr(result, 'txts', None)
-            boxes = getattr(result, 'boxes', None)
-            scores = getattr(result, 'scores', None)
+            texts = result.txts
+            boxes = result.boxes
+            scores = result.scores
         except AttributeError:
             return None, None, None
         if texts is None:
