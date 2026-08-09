@@ -91,13 +91,18 @@ def main():
         print("FAIL: capture")
         sys.exit(1)
 
-    if esc_menu.detect_ocr(ocr, img):
+    is_esc = esc_menu.detect_ocr(ocr, img)
+    is_home = home.detect(img)
+    is_dungeon = is_dungeon_page(img)
+    print(f"  页面检测: home={is_home} dungeon={is_dungeon} esc={is_esc}")
+
+    if is_esc:
         print("  ESC menu -> close")
         _dismiss_esc(ss, ocr, esc_menu, controller)
         time.sleep(0.5)
         img = ss.capture()
 
-    if home.detect(img):
+    if is_home:
         print("  OK: 主城 -> L")
         controller.press_key("L", down_time=0.1)
         # 等 1.5s 先检查一次，不行再等 1.5s
@@ -131,7 +136,7 @@ def main():
         if img is None or not is_dungeon_page(img):
             print("FAIL: 无法进入副本页")
             sys.exit(1)
-    elif is_dungeon_page(img):
+    elif is_dungeon:
         print("  OK: 已在副本页")
     else:
         print("  unknown page -> try L")
@@ -145,7 +150,7 @@ def main():
     print("\n[2/3] 选择 " + target + " ...")
 
     found = False
-    for attempt in range(1, 8):
+    for attempt in range(1, 6):
         _dismiss_esc(ss, ocr, esc_menu, controller)
 
         print("  #" + str(attempt) + " ", end="", flush=True)
