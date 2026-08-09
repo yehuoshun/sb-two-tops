@@ -21,10 +21,6 @@ user32: ctypes.WinDLL = ctypes.windll.user32
 # Unity 游戏不吃 PostMessage 键盘消息，用 SendInput 发真实输入
 
 
-INPUT_KEYBOARD = 1
-KEYEVENTF_KEYUP = 0x0002
-
-
 def _send_input_key(vk: int, key_down: bool):
     """用 SendInput 发送真实键盘事件（Unity 兼容）"""
     try:
@@ -45,8 +41,8 @@ def _send_input_key(vk: int, key_down: bool):
             _fields_ = [("type", ctypes.c_ulong), ("u", _KeyUnion)]
 
         inp = _InputWrap()
-        inp.type = INPUT_KEYBOARD
-        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else KEYEVENTF_KEYUP, 0, ctypes.c_void_p(0))
+        inp.type = 1  # INPUT_KEYBOARD
+        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else 2, 0, ctypes.c_void_p(0))  # 2 = KEYEVENTF_KEYUP
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_InputWrap))
         logger.debug(f"SendInput: vk=0x{vk:02X} {'down' if key_down else 'up'}")
     except Exception as e:
