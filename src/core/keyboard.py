@@ -15,16 +15,13 @@ from src.core.constants import resolve_vk
 logger = logging.getLogger("sb-two-tops.keyboard")
 
 user32: ctypes.WinDLL = ctypes.windll.user32
-user32.PostMessageW.argtypes = [
-    ctypes.wintypes.HWND, ctypes.wintypes.UINT,
-    ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM,
-]
-user32.PostMessageW.restype = ctypes.wintypes.BOOL
 
 
 # ── SendInput 键盘 ──
 # Unity 游戏不吃 PostMessage 键盘消息，需用 SendInput 发真实键盘事件
-class _KEYBDINPUT(ctypes.Structure):
+
+
+class _KeybdInput(ctypes.Structure):
     _fields_ = [
         ("wVk", ctypes.wintypes.WORD),
         ("wScan", ctypes.wintypes.WORD),
@@ -34,12 +31,12 @@ class _KEYBDINPUT(ctypes.Structure):
     ]
 
 
-class _INPUT_UNION(ctypes.Union):
-    _fields_ = [("ki", _KEYBDINPUT)]
+class _InputUnion(ctypes.Union):
+    _fields_ = [("ki", _KeybdInput)]
 
 
-class _INPUT(ctypes.Structure):
-    _fields_ = [("type", ctypes.wintypes.DWORD), ("u", _INPUT_UNION)]
+class _Input(ctypes.Structure):
+    _fields_ = [("type", ctypes.wintypes.DWORD), ("u", _InputUnion)]
 
 
 INPUT_KEYBOARD = 1
@@ -49,10 +46,10 @@ KEYEVENTF_KEYUP = 0x0002
 def _send_input_key(vk: int, key_down: bool):
     """用 SendInput 发送真实键盘事件（Unity 兼容）"""
     try:
-        inp = _INPUT()
+        inp = _Input()
         inp.type = INPUT_KEYBOARD
-        inp.u.ki = _KEYBDINPUT(vk, 0, 0 if key_down else KEYEVENTF_KEYUP, 0, ctypes.c_void_p(0))
-        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_INPUT))
+        inp.u.ki = _KeybdInput(vk, 0, 0 if key_down else KEYEVENTF_KEYUP, 0, ctypes.c_void_p(0))
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_Input))
     except Exception as e:
         logger.debug(f"SendInput 键盘失败: {e}")
 
@@ -61,10 +58,11 @@ class Keyboard:
     """SendInput 前台键盘操作器（Unity 兼容）"""
 
     def __init__(self, hwnd: int):
-        self.hwnd = hwnd
+        _ = hwnd  # API 兼容，后期可能恢复 hwnd 绑定
         self._held_keys: Dict[str, float] = {}
 
-    def press_key(self, key, down_time: float = 0.05):
+    @staticmethod
+    def press_key(key, down_time: float = 0.05):
         """按下并松开按键（SendInput，Unity 兼容）"""
         vk = key if isinstance(key, int) else resolve_vk(str(key))
         _send_input_key(vk, True)
@@ -94,7 +92,8 @@ class Keyboard:
         _send_input_key(vk, False)
         self._held_keys.pop(key_name, None)
 
-    def hold_key(self, key, duration: float):
+    @staticmethod
+    def hold_key(key, duration: float):
         """按住按键一段时间后松开（SendInput，Unity 兼容）"""
         vk = key if isinstance(key, int) else resolve_vk(str(key))
         _send_input_key(vk, True)
