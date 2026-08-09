@@ -74,7 +74,9 @@ class Screenshot:
         return self.find_window()
 
     def _update_size(self):
-        rect = win32gui.GetClientRect(self.hwnd)
+        hwnd = self.hwnd
+        assert hwnd is not None, "_update_size called before find_window"
+        rect = win32gui.GetClientRect(hwnd)
         self._width = rect[2] - rect[0]
         self._height = rect[3] - rect[1]
 
