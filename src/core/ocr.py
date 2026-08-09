@@ -70,12 +70,12 @@ class OCR:
                     return self.read(image)
             return []
 
-        txts, boxes, scores = self._extract(result)
-        if not txts or boxes is None or scores is None:
+        texts, boxes, scores = self._extract(result)
+        if not texts or boxes is None or scores is None:
             return []
 
         parsed = []
-        for text, box, score in zip(txts, boxes, scores):
+        for text, box, score in zip(texts, boxes, scores):
             if not text or score is None:
                 continue
             xs = [p[0] for p in box]
