@@ -13,7 +13,7 @@ API:
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 
 logger = logging.getLogger("sb-two-tops.ocr")
 
@@ -22,7 +22,7 @@ class OCR:
     """RapidOCR 识字包装器"""
 
     def __init__(self):
-        self._engine = None
+        self._engine: Any = None
         self._retries = 0
         self._max_retries = 3
 
