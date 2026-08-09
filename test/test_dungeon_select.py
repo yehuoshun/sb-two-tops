@@ -241,8 +241,6 @@ def main():
 
     found = False
     for attempt in range(1, 6):
-        _dismiss_esc(ss, ocr, esc_menu, controller)
-
         img = ss.capture()
         if img is None:
             logger.warning(f"第 {attempt} 次尝试截图失败")
@@ -286,6 +284,13 @@ def main():
     else:
         if diff_img is not None:
             _save_debug_screenshot(diff_img, "fail_step3_difficulty")
+            # 找不到时，输出全屏所有 OCR 文字，方便定位
+            all_texts = ocr.read(diff_img)
+            logger.info(f"画面 OCR 结果 ({len(all_texts)} 条):")
+            for text, cx, cy, score in all_texts[:20]:
+                logger.info(f"  \"{text}\" @ ({cx},{cy}) score={score:.3f}")
+            if len(all_texts) > 20:
+                logger.info(f"  ... 还有 {len(all_texts)-20} 条")
         logger.warning(f"未找到难度 {difficulty}")
 
     # ── 完成 ──
