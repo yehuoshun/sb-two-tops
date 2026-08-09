@@ -36,19 +36,12 @@ class DungeonSelectPage(BasePage):
         self._scroll_attempt = 0
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在副本选择页 — 图标行数量配合 OCR 兜底"""
-        count = self.recognizer.count_icons_in_row(screenshot)
-        # 副本页图标行通常很多（grid 图标），主城 8 个左右
-        # 这里只看图标行是否存在，不作为主要判断依据
-        if count >= 4:
-            logger.debug(f"dungeon.detect: icons={count} >= 4 -> 图标行存在")
-            return True
-        logger.debug(f"dungeon.detect: icons={count} < 4 -> False")
+        """检测是否在副本选择页 — 只用 OCR，图标计数不可靠"""
+        _ = screenshot
         return False
 
     def detect_ocr(self, ocr, screenshot) -> bool:
         """OCR 检测顶部 tab 栏是否有委托/夜航手册等文字"""
-        # 顶部 tab 栏区域（x=150-600, y=30-120）
         tab_region = (150, 30, 450, 90)
         for keyword in ["委托", "夜航手册", "委托密函", "悬赏委托"]:
             result = ocr.find_text(screenshot, keyword, min_score=0.3,
