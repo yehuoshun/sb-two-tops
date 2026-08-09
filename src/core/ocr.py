@@ -13,7 +13,7 @@ API:
 """
 
 import logging
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger("sb-two-tops.ocr")
 
@@ -22,7 +22,7 @@ class OCR:
     """RapidOCR 识字包装器"""
 
     def __init__(self):
-        self._engine: Any = None
+        self._engine = None
         self._retries = 0
         self._max_retries = 3
 
@@ -56,12 +56,9 @@ class OCR:
         if not self._lazy_init():
             return []
 
-        engine = self._engine
-        if engine is None:
-            return []
-
         try:
-            result = engine(image)
+            assert self._engine is not None
+            result = self._engine(image)
         except Exception as e:
             err_str = str(e)
             logger.error(f"OCR 识别失败: {err_str}")
