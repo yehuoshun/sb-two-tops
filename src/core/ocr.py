@@ -60,7 +60,7 @@ class OCR:
         txts = getattr(result, 'txts', None)
         boxes = getattr(result, 'boxes', None)
         scores = getattr(result, 'scores', None)
-        if txts is None or boxes is None or scores is None or len(txts) == 0:
+        if not txts or boxes is None or scores is None:
             return []
 
         parsed = []
