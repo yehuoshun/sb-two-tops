@@ -248,10 +248,10 @@ def main():
 
         # 点击扼守后等确认页出现
         logger.info(f"[{target}] 已点击，等待确认页")
-        ok, img = _wait_until(ss, is_confirm_page, timeout=5, interval=0.3)
+        ok, confirm_img = _wait_until(ss, is_confirm_page, timeout=5, interval=0.3)
         if ok:
             logger.info("确认页已出现")
-            _diagnose_screenshot(recognizer, img, "step2_after_click")
+            _diagnose_screenshot(recognizer, confirm_img, "step2_after_click")
             # 选难度
             logger.info(f"Step 2b: 选择难度 [{difficulty}]")
             time.sleep(0.5)
@@ -273,7 +273,21 @@ def main():
                 logger.warning(f"未找到难度 [{difficulty}]，可能已选中")
         else:
             logger.warning("点击扼守后未检测到确认页")
-            _save_debug_screenshot(img, "step2_no_confirm_after_click")
+            # 诊断：看点击后画面是什么
+            diag_img = ss.capture()
+            if diag_img is not None:
+                _save_debug_screenshot(diag_img, "step2_after_click_no_confirm")
+                diag_page = get_page_label(diag_img)
+                logger.info(f"点击后页面: {diag_page}")
+                dump = ocr.read(diag_img)
+                logger.info(f"点击后 OCR ({len(dump)} 条):")
+                for text, cx, cy, score in dump[:30]:
+                    logger.info(f"  \"{text}\" @ ({cx},{cy}) score={score:.3f}")
+                if len(dump) > 30:
+                    logger.info(f"  ... 还有 {len(dump)-30} 条")
+            else:
+                logger.error("点击后截图失败")
+            sys.exit(1)
 
     elif page == "CONFIRM":
         logger.info("已在确认页，跳过选择步骤")
