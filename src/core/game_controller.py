@@ -7,8 +7,6 @@
 
 import logging
 import time
-from typing import Tuple
-
 from src.core.clicker import MouseClicker
 from src.core.keyboard import Keyboard
 
@@ -85,7 +83,7 @@ class GameController:
         """大招 Q"""
         self.keyboard.press_key("Q", down_time=0.03)
 
-    def use_geniemon(self):
+    def use_monster(self):
         """魔灵技能 Z"""
         self.keyboard.press_key("Z", down_time=0.03)
 
