@@ -133,13 +133,27 @@ class MouseClicker:
             time.sleep(0.03)
             user32.PostMessageW(hwnd, wm_right_button_up, 0, lparam)
 
+    def _get_window_screen_pos(self) -> Tuple[int, int]:
+        """获取窗口客户区左上角在屏幕上的坐标"""
+        rect = ctypes.wintypes.RECT()
+        user32.GetWindowRect(self.hwnd, ctypes.byref(rect))
+        # 客户区起始位置 = 窗口位置 + 标题栏偏移（通常 30px）
+        # Unity 游戏通常无边框，窗口位置 ≈ 客户区位置
+        return rect.left, rect.top
+
     def click(self, x: int, y: int, button: str = "left"):
-        """在指定坐标点击（双通道：子窗口 + 主窗口）"""
+        """在指定坐标点击（光标移动 + PostMessage 双通道）"""
         sx, sy = self._scale(x, y)
         child = self._resolve_child(sx, sy)
-        lparam = make_lparam(sx, sy)
 
-        logger.debug(f"click: ({x},{y}) -> scaled ({sx},{sy}) child={child} main={self.hwnd} btn={button}")
+        # 将光标移到窗口内的正确屏幕位置
+        win_left, win_top = self._get_window_screen_pos()
+        screen_x = win_left + sx
+        screen_y = win_top + sy
+        self.move_to(screen_x, screen_y)
+
+        logger.debug(f"click: ({x},{y}) -> scaled ({sx},{sy}) screen=({screen_x},{screen_y}) "
+                     f"child={child} main={self.hwnd} btn={button}")
 
         # 通道1: 发到子窗口（Unity 通常有 UnityWndClass 子窗口）
         self._send_click(child, sx, sy, button)
