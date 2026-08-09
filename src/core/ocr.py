@@ -5,11 +5,6 @@ OCR 模块 — RapidOCR 识字
 自动处理内存泄漏（bad allocation 时重建引擎）。
 
 依赖: pip install rapidocr onnxruntime
-
-API:
-    ocr = OCR()
-    results = ocr.read(screenshot)
-    # results: [(text, (cx, cy), confidence), ...]
 """
 
 import logging
@@ -22,47 +17,41 @@ class OCR:
     """RapidOCR 识字包装器"""
 
     def __init__(self):
-        self._engine = None
+        self._engine = self._create_engine()
         self._retries = 0
         self._max_retries = 3
 
-    def _lazy_init(self) -> bool:
-        if self._engine is not None:
-            return True
+    @staticmethod
+    def _create_engine():
         try:
             from rapidocr import RapidOCR
-            self._engine = RapidOCR()
-            self._retries = 0
-            logger.info("RapidOCR 初始化成功")
-            return True
+            return RapidOCR()
         except ImportError:
             logger.error("rapidocr 未安装，请执行: pip install rapidocr onnxruntime")
-            return False
+            return None
         except Exception as e:
             logger.error(f"RapidOCR 初始化失败: {e}")
-            return False
+            return None
 
     def _reinit(self):
         """重建引擎（处理内存泄漏后的 bad allocation）"""
-        self._engine = None
         self._retries += 1
         if self._retries > self._max_retries:
             logger.error(f"OCR 重建超过 {self._max_retries} 次，放弃")
             return False
         logger.info(f"重建 OCR 引擎 ({self._retries}/{self._max_retries})")
-        return self._lazy_init()
+        self._engine = self._create_engine()
+        return self._engine is not None
 
     def read(self, image) -> List[Tuple[str, int, int, float]]:
-        if not self._lazy_init():
+        if self._engine is None:
             return []
 
         try:
-            assert self._engine is not None
             result = self._engine(image)
         except Exception as e:
             err_str = str(e)
             logger.error(f"OCR 识别失败: {err_str}")
-            # bad allocation -> 重建引擎再试一次
             if "bad allocation" in err_str:
                 if self._reinit():
                     return self.read(image)
