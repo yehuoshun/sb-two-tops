@@ -43,19 +43,6 @@ class OCR:
         self._engine = self._create_engine()
         return self._engine is not None
 
-    @staticmethod
-    def _extract(result):
-        """从 RapidOCR 结果中提取文本、坐标、置信度"""
-        try:
-            texts = result.txts
-            boxes = result.boxes
-            scores = result.scores
-        except AttributeError:
-            return None, None, None
-        if texts is None:
-            return None, None, None
-        return texts, boxes, scores
-
     def read(self, image) -> List[Tuple[str, int, int, float]]:
         if self._engine is None:
             return []
@@ -70,7 +57,9 @@ class OCR:
                     return self.read(image)
             return []
 
-        texts, boxes, scores = self._extract(result)
+        texts = getattr(result, 'txts', None)
+        boxes = getattr(result, 'boxes', None)
+        scores = getattr(result, 'scores', None)
         if not texts or boxes is None or scores is None:
             return []
 
