@@ -47,15 +47,14 @@ class OCR:
     def _extract(result):
         """从 RapidOCR 结果中提取文本、坐标、置信度"""
         try:
-            txts = getattr(result, 'txts', None)
+            texts = getattr(result, 'txts', None)
             boxes = getattr(result, 'boxes', None)
             scores = getattr(result, 'scores', None)
         except AttributeError:
             return None, None, None
-        # 确保 None 被正确返回，PyCharm 类型推断用
-        if txts is None:
+        if texts is None:
             return None, None, None
-        return txts, boxes, scores
+        return texts, boxes, scores
 
     def read(self, image) -> List[Tuple[str, int, int, float]]:
         if self._engine is None:
