@@ -267,6 +267,12 @@ def main():
     logger.info("─" * 40)
     logger.info(f"Step 3/3: 选择难度 {difficulty}")
 
+    # 点击扼守后等画面变化
+    time.sleep(1.0)
+    img = ss.capture()
+    if img is not None:
+        diagnose_screenshot(img, "step3_after_click")
+
     def check_difficulty(img):
         return dungeon.select_difficulty(img)
 

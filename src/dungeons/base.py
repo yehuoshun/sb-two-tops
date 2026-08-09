@@ -40,8 +40,8 @@ class BaseDungeon:
     # 难度选择（默认 50级，可改）
     difficulty: str = "50级"
 
-    # 左侧难度按钮 OCR 搜索区域 (x, y, w, h)
-    difficulty_region: tuple = (20, 200, 300, 600)
+    # 难度按钮 OCR 搜索区域 (x, y, w, h) — 全屏搜索
+    difficulty_region: tuple = (0, 0, 1920, 1080)
 
     # 确认/结算按钮 OCR 搜索区域 (x, y, w, h)
     confirm_region: tuple = (400, 500, 1120, 400)

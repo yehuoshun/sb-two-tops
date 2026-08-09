@@ -14,11 +14,12 @@ class HomePage(BasePage):
     """主城页面 — 检测右上角图标行"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在主城 — 图标行约8个"""
+        """检测是否在主城 — 不同城市图标行数不同（A城约8个，B城约5个等）"""
         _ = self.recognizer
         count = self.recognizer.count_icons_in_row(screenshot)
-        result = count >= 6
-        logger.debug(f"home.detect: icons={count} threshold=6 result={result}")
+        # 阈值设低覆盖所有城市，有图标行就认为是主城
+        result = count >= 3
+        logger.debug(f"home.detect: icons={count} threshold=3 result={result}")
         return result
 
     def enter_dungeon(self, clicker):
