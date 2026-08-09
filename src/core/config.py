@@ -4,7 +4,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 import logging
 
 logger = logging.getLogger("sb-two-tops.config")
@@ -47,7 +47,7 @@ class Config:
 
     @property
     def window_title(self) -> str:
-        return self.get("game", "window_title", default="二重螺旋")
+        return cast(str, self.get("game", "window_title", default="二重螺旋"))
 
     @property
     def window_class(self) -> Optional[str]:
