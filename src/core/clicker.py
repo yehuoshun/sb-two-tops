@@ -47,7 +47,7 @@ def _sendinput_scroll(delta: int):
             _fields_ = [
                 ("dx", LONG), ("dy", LONG),
                 ("mouseData", DWORD), ("dwFlags", DWORD),
-                ("time", DWORD), ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+                ("time", DWORD), ("dwExtraInfo", ctypes.c_void_p),
             ]
 
         class INPUT(ctypes.Structure):
@@ -58,7 +58,7 @@ def _sendinput_scroll(delta: int):
 
         inp = INPUT()
         inp.type = INPUT_MOUSE
-        inp.mi = MOUSEINPUT(0, 0, delta, MOUSEEVENTF_WHEEL, 0, None)
+        inp.mi = MOUSEINPUT(0, 0, delta, MOUSEEVENTF_WHEEL, 0, ctypes.c_void_p(0))
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception as e:
         logger.debug(f"SendInput 滚轮失败: {e}")
