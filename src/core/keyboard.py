@@ -15,7 +15,6 @@ from src.core.constants import resolve_vk
 logger = logging.getLogger("sb-two-tops.keyboard")
 
 user32: ctypes.WinDLL = ctypes.windll.user32
-# noinspection PyUnresolvedReferences
 user32.PostMessageW.argtypes = [
     ctypes.wintypes.HWND, ctypes.wintypes.UINT,
     ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM,
@@ -25,8 +24,6 @@ user32.PostMessageW.restype = ctypes.wintypes.BOOL
 
 # ── SendInput 键盘 ──
 # Unity 游戏不吃 PostMessage 键盘消息，需用 SendInput 发真实键盘事件
-
-
 class _KEYBDINPUT(ctypes.Structure):
     _fields_ = [
         ("wVk", ctypes.wintypes.WORD),
