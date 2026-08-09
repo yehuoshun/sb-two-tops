@@ -46,15 +46,17 @@ def _save_debug_screenshot(img, label: str = ""):
 
 def _wait_until(ss, check_fn, timeout=10, interval=0.2):
     start = time.time()
+    last_img = None
     while time.time() - start < timeout:
         img = ss.capture()
         if img is None:
             time.sleep(interval)
             continue
+        last_img = img
         if check_fn(img):
             return True, img
         time.sleep(interval)
-    return False, None
+    return False, last_img
 
 
 def _diagnose_screenshot(recognizer, img, label: str = "diag"):
@@ -199,13 +201,13 @@ def main():
     logger.info(f"Step 2/6: 选择副本 [{target}]")
 
     # 确保在副本选择页（用 _wait_until 重试，防止页面跳变）
-    ok, img = _wait_until(ss, lambda i: is_dungeon_page(i) or is_confirm_page(i), timeout=3)
+    ok, img = _wait_until(ss, lambda i: is_dungeon_page(i) or is_confirm_page(i), timeout=10)
     if not ok:
         # 可能回了主城，尝试再按 L
         logger.warning("未检测到副本页/确认页，尝试重新按 L")
         ss.bring_to_foreground()
         controller.press_key("L", down_time=0.1)
-        ok, img = _wait_until(ss, is_dungeon_page, timeout=5)
+        ok, img = _wait_until(ss, is_dungeon_page, timeout=10)
         if not ok:
             _save_debug_screenshot(img, "step2_fail_not_dungeon")
             logger.error("无法进入副本选择页")
@@ -248,7 +250,7 @@ def main():
 
         # 点击扼守后等确认页出现
         logger.info(f"[{target}] 已点击，等待确认页")
-        ok, confirm_img = _wait_until(ss, is_confirm_page, timeout=5, interval=0.3)
+        ok, confirm_img = _wait_until(ss, is_confirm_page, timeout=15, interval=0.3)
         if ok:
             logger.info("确认页已出现")
             _diagnose_screenshot(recognizer, confirm_img, "step2_after_click")
@@ -309,7 +311,7 @@ def main():
     logger.info(f"当前页面: {page}")
 
     if page == "CONFIRM":
-        ok, _ = _wait_until(ss, is_confirm_page, timeout=3)
+        ok, _ = _wait_until(ss, is_confirm_page, timeout=10)
         if ok:
             clicked = dungeon.confirm(img)
             if clicked:
@@ -480,7 +482,7 @@ def main():
         def try_settlement(img):
             return dungeon.settlement(img)
 
-        ok, _ = _wait_until(ss, try_settlement, timeout=8)
+        ok, _ = _wait_until(ss, try_settlement, timeout=15)
         if ok:
             logger.info("✅ 结算按钮已点击")
             time.sleep(1.5)
