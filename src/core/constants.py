@@ -55,7 +55,7 @@ cwpSkipInvisible = 0x0001
 cwpSkipTransparent = 0x0004
 
 
-def makeLParam(x: int, y: int) -> int:
+def makeLparam(x: int, y: int) -> int:
     """将坐标打包为 LPARAM"""
     return ((y & 0xFFFF) << 16) | (x & 0xFFFF)
 
