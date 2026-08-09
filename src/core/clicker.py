@@ -43,7 +43,7 @@ def _send_input_scroll(delta: int):
         from ctypes import c_uint
         from ctypes.wintypes import DWORD, LONG, WORD
 
-        class MOUSEINPUT(ctypes.Structure):  # noinspection SpellCheckingInspection
+        class MouseInput(ctypes.Structure):
             _fields_ = [
                 ("dx", LONG), ("dy", LONG),
                 ("mouseData", DWORD), ("dwFlags", DWORD),
@@ -51,14 +51,14 @@ def _send_input_scroll(delta: int):
             ]
 
         class INPUT(ctypes.Structure):
-            _fields_ = [("type", DWORD), ("mi", MOUSEINPUT)]
+            _fields_ = [("type", DWORD), ("mi", MouseInput)]
 
         input_mouse = 0
         mouseeventf_wheel = 0x0800
 
         inp = INPUT()
         inp.type = input_mouse
-        inp.mi = MOUSEINPUT(0, 0, delta, mouseeventf_wheel, 0, ctypes.c_void_p(0))
+        inp.mi = MouseInput(0, 0, delta, mouseeventf_wheel, 0, ctypes.c_void_p(0))
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception as e:
         logger.debug(f"SendInput 滚轮失败: {e}")
