@@ -13,21 +13,9 @@ import numpy as np
 
 logger = logging.getLogger("sb-two-tops.recognizer")
 
-# 默认检测配置
-DETECT_CONFIG = {
-    "battle": {
-        "features": ["battle_tanxian", "battle_dangqianlunci"],
-        "search_box": (0.02, 0.20, 0.30, 0.18),
-        "threshold": 170,
-        "match_threshold": 0.7,
-    },
-    "home": {
-        "features": ["home_track"],
-        "search_box": (0.0, 0.28, 0.15, 0.12),
-        "threshold": 170,
-        "match_threshold": 0.65,
-    },
-}
+# 默认检测配置（已弃用，改用 OCR 检测）
+# 保留空结构避免 import 报错，后续可删
+DETECT_CONFIG = {}
 
 
 class Recognizer:
