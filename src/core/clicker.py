@@ -40,8 +40,7 @@ user32.ChildWindowFromPointEx.restype = ctypes.wintypes.HWND
 def _send_input_scroll(delta: int):
     """用 SendInput 模拟真实滚轮事件"""
     try:
-        from ctypes import c_uint
-        from ctypes.wintypes import DWORD, LONG, WORD
+        from ctypes.wintypes import DWORD, LONG
 
         class MouseInput(ctypes.Structure):
             _fields_ = [
@@ -53,12 +52,9 @@ def _send_input_scroll(delta: int):
         class INPUT(ctypes.Structure):
             _fields_ = [("type", DWORD), ("mi", MouseInput)]
 
-        input_mouse = 0
-        mouseeventf_wheel = 0x0800
-
         inp = INPUT()
-        inp.type = input_mouse
-        inp.mi = MouseInput(0, 0, delta, mouseeventf_wheel, 0, ctypes.c_void_p(0))
+        inp.type = 0  # INPUT_MOUSE
+        inp.mi = MouseInput(0, 0, delta, 0x0800, 0, ctypes.c_void_p(0))
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception as e:
         logger.debug(f"SendInput 滚轮失败: {e}")
