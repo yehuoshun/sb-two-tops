@@ -94,7 +94,7 @@ class BaseDungeon:
             bool: 是否成功点击
         """
         # 尝试多种难度关键词（不同 UI 可能显示不同）
-        keywords = [self.difficulty, "50", "Lv.50", "Level 50"]
+        keywords = [self.difficulty, "Lv.50", "Level 50"]
         for keyword in keywords:
             result = self.ocr.find_text(screenshot, keyword, min_score=0.3,
                                         region=self.difficulty_region)
