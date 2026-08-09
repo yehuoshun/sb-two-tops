@@ -26,11 +26,13 @@ from src.core.constants import (
 logger = logging.getLogger("sb-two-tops.clicker")
 
 user32: ctypes.WinDLL = ctypes.windll.user32
+# noinspection PyUnresolvedReferences
 user32.PostMessageW.argtypes = [
     ctypes.wintypes.HWND, ctypes.wintypes.UINT,
     ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM,
 ]
 user32.PostMessageW.restype = ctypes.wintypes.BOOL
+# noinspection PyUnresolvedReferences
 user32.ChildWindowFromPointEx.argtypes = [
     ctypes.wintypes.HWND, ctypes.wintypes.POINT, ctypes.wintypes.UINT,
 ]
