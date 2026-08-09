@@ -105,6 +105,7 @@ def main():
 
     # ── 截图诊断工具 ──
     def diagnose_screenshot(img, label: str = "initial"):
+        nonlocal ss
         """截图的完整诊断信息"""
         stats = {
             "size": f"{img.shape[1]}x{img.shape[0]}",
@@ -130,9 +131,21 @@ def main():
     logger.info("─" * 40)
     logger.info("Step 1/3: 前往副本菜单")
 
-    img = ss.capture()
+    # 首次截图可能偏暗（窗口过渡），重试直到正常
+    img = None
+    for retry in range(3):
+        img = ss.capture()
+        if img is None:
+            time.sleep(0.5)
+            continue
+        mean_val = img.mean()
+        if mean_val < 30 or img.shape[0] < 100:
+            logger.debug(f"截图偏暗 mean={mean_val:.0f}，重试 {retry+1}/3")
+            time.sleep(0.5)
+            continue
+        break
     if img is None:
-        logger.error("截图失败")
+        logger.error("截图失败（重试 3 次）")
         sys.exit(1)
 
     diagnose_screenshot(img, "step1")
@@ -241,8 +254,8 @@ def main():
             break
 
         logger.debug(f"未找到 {target}，向下滚动 尝试={attempt}/5")
-        controller.scroll(-120, 600, 800, times=4)
-        time.sleep(0.3)
+        controller.scroll(-120, 600, 500, times=10)
+        time.sleep(0.5)
 
     if not found:
         if img is not None:

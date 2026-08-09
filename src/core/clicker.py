@@ -74,7 +74,9 @@ class MouseClicker:
         time.sleep(0.02)
 
     def scroll(self, delta: int = -120, x: int = 0, y: int = 0, times: int = 1):
-        """滚动鼠标滚轮（PostMessageW 后台 + SendInput 兜底）
+        """滚动鼠标滚轮
+
+        策略: 光标移到窗口滚动区域 + SendInput 系统级滚轮 + PostMessage 窗口后台
 
         Args:
             delta: 单次滚动量，负值向下，正值向上，默认 -120
@@ -84,15 +86,24 @@ class MouseClicker:
         """
         sx, sy = self._scale(x, y) if x or y else (0, 0)
 
+        # 获取窗口屏幕位置，保证光标在窗口滚动区域上
+        rect = ctypes.wintypes.RECT()
+        user32.GetWindowRect(self.hwnd, ctypes.byref(rect))
+        screen_x = rect.left + sx
+        screen_y = rect.top + sy
+
         for _ in range(times):
-            # 通道1: PostMessageW 到子窗口（后台可用）
+            # 光标移到窗口滚动区域（SendInput 需要光标在窗口上）
+            self.move_to(screen_x, screen_y)
+
+            # 通道1: SendInput 系统级滚轮（Unity 需要这个）
+            _send_input_scroll(delta)
+
+            # 通道2: PostMessageW 到子窗口（后台可用）
             target = self._resolve_child(sx, sy) if (sx or sy) else self.hwnd
             wparam = (delta << 16) & 0xFFFF0000
             lparam = make_lparam(sx, sy)
             user32.PostMessageW(target, wm_mouse_wheel, wparam, lparam)
-
-            # 通道2: SendInput 系统级滚轮（光标需在窗口上）
-            _send_input_scroll(delta)
 
             time.sleep(0.03)
 
