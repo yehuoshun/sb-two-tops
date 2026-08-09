@@ -56,6 +56,9 @@ class OCR:
         if not self._lazy_init():
             return []
 
+        if self._engine is None:
+            return []
+
         try:
             result = self._engine(image)
         except Exception as e:
@@ -86,9 +89,9 @@ class OCR:
     def find_text(self, image, target: str, min_score: float = 0.3,
                   region: Optional[Tuple[int, int, int, int]] = None
                   ) -> Optional[Tuple[int, int, float]]:
+        rx = ry = 0
         if region:
             rx, ry, rw, rh = region
-            # 边界保护
             h, w = image.shape[:2]
             ry = max(0, ry)
             rx = max(0, rx)
