@@ -27,22 +27,22 @@ def _send_input_key(vk: int, key_down: bool):
         # ctypes 结构体定义在函数内，避免前向引用问题
         class _KeyInput(ctypes.Structure):
             _fields_ = [
-                ("wVk", ctypes.c_ushort),
-                ("wScan", ctypes.c_ushort),
-                ("dwFlags", ctypes.c_ulong),
-                ("time", ctypes.c_ulong),
-                ("dwExtraInfo", ctypes.c_void_p),
+                ("vk_code", ctypes.c_ushort),
+                ("scan_code", ctypes.c_ushort),
+                ("flags", ctypes.c_ulong),
+                ("timestamp", ctypes.c_ulong),
+                ("extra_info", ctypes.c_void_p),
             ]
 
         class _KeyUnion(ctypes.Union):
-            _fields_ = [("ki", _KeyInput)]
+            _fields_ = [("key_input", _KeyInput)]
 
         class _InputWrap(ctypes.Structure):
-            _fields_ = [("type", ctypes.c_ulong), ("u", _KeyUnion)]
+            _fields_ = [("input_type", ctypes.c_ulong), ("union_data", _KeyUnion)]
 
         inp = _InputWrap()
-        inp.type = 1  # INPUT_KEYBOARD
-        inp.u.ki = _KeyInput(vk, 0, 0 if key_down else 2, 0, ctypes.c_void_p(0))  # 2 = KEY_EVENTF_KEYUP
+        inp.input_type = 1  # INPUT_KEYBOARD
+        inp.union_data.key_input = _KeyInput(vk, 0, 0 if key_down else 2, 0, ctypes.c_void_p(0))  # 2 = KEY_EVENTF_KEYUP
         user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_InputWrap))
         logger.debug(f"SendInput: vk=0x{vk:02X} {'down' if key_down else 'up'}")
     except Exception as e:
