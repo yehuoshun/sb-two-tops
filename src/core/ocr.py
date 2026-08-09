@@ -10,6 +10,21 @@ OCR 模块 — RapidOCR 识字
 import logging
 from typing import List, Optional, Tuple
 
+# 延迟导入 RapidOCROutput 类型，用于 isinstance 检查
+# 实际导入在 _check_engine 中完成
+_RAPIDOCR_OUTPUT = None
+
+
+def _get_rapidocr_output():
+    global _RAPIDOCR_OUTPUT
+    if _RAPIDOCR_OUTPUT is None:
+        try:
+            from rapidocr.utils.output import RapidOCROutput
+            _RAPIDOCR_OUTPUT = RapidOCROutput
+        except ImportError:
+            pass
+    return _RAPIDOCR_OUTPUT
+
 logger = logging.getLogger("sb-two-tops.ocr")
 
 
@@ -57,9 +72,13 @@ class OCR:
                     return self.read(image)
             return []
 
-        texts = getattr(result, 'txts', None)
-        boxes = getattr(result, 'boxes', None)
-        scores = getattr(result, 'scores', None)
+        output_cls = _get_rapidocr_output()
+        if output_cls is None or not isinstance(result, output_cls):
+            return []
+
+        texts = result.txts
+        boxes = result.boxes
+        scores = result.scores
         if not texts or boxes is None or scores is None:
             return []
 
