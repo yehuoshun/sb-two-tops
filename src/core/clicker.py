@@ -71,7 +71,8 @@ class MouseClicker:
         self.hwnd = hwnd
         self.scale_x, self.scale_y = scale
 
-    def move_to(self, x: int, y: int):
+    @staticmethod
+    def move_to(x: int, y: int):
         """将鼠标光标移到屏幕坐标 (x, y)（Unity 游戏需要光标在滚动区域上）"""
         user32.SetCursorPos(x, y)
         time.sleep(0.02)
