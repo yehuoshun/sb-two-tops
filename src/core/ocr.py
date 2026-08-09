@@ -12,19 +12,15 @@ from typing import List, Optional, Tuple
 
 # 延迟导入 RapidOCROutput 类型，用于 isinstance 检查
 # 实际导入在 _check_engine 中完成
-_RAPIDOCR_OUTPUT = None
+import importlib
 
 
 def _get_rapidocr_output():
-    global _RAPIDOCR_OUTPUT
-    if _RAPIDOCR_OUTPUT is not None:
-        return _RAPIDOCR_OUTPUT
     try:
-        import rapidocr.utils.output as _rapidocr_output
-        _RAPIDOCR_OUTPUT = _rapidocr_output.RapidOCROutput
+        mod = importlib.import_module('rapidocr.utils.output')
+        return mod.RapidOCROutput
     except ImportError:
-        _RAPIDOCR_OUTPUT = None
-    return _RAPIDOCR_OUTPUT
+        return None
 
 logger = logging.getLogger("sb-two-tops.ocr")
 
