@@ -39,6 +39,7 @@ user32.ChildWindowFromPointEx.argtypes = [
 user32.ChildWindowFromPointEx.restype = ctypes.wintypes.HWND
 
 
+# noinspection SpellCheckingInspection
 def _sendinput_scroll(delta: int):
     """用 SendInput 模拟真实滚轮事件"""
     try:
