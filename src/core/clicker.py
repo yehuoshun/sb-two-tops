@@ -14,12 +14,12 @@ import time
 from typing import Tuple
 
 from src.core.constants import (
-    wmLeftButtonDown, wmLeftButtonUp,
-    wmRightButtonDown, wmRightButtonUp,
-    wmMiddleButtonDown, wmMiddleButtonUp,
-    wmMouseMove, wmMouseWheel,
-    mkLeftButton, mkMiddleButton,
-    cwpSkipInvisible, cwpSkipTransparent,
+    wm_left_button_down, wm_left_button_up,
+    wm_right_button_down, wm_right_button_up,
+    wm_middle_button_down, wm_middle_button_up,
+    wm_mouse_move, wm_mouse_wheel,
+    mk_left_button, mk_middle_button,
+    cwp_skip_invisible, cwp_skip_transparent,
     make_lparam,
 )
 
@@ -88,7 +88,7 @@ class MouseClicker:
         _send_input_scroll(delta)
         wparam = (delta << 16) & 0xFFFF0000
         lparam = make_lparam(x, y)
-        user32.PostMessageW(self.hwnd, wmMouseWheel, wparam, lparam)
+        user32.PostMessageW(self.hwnd, wm_mouse_wheel, wparam, lparam)
         time.sleep(0.03)  # 仅消抖
 
     def _scale(self, x: int, y: int) -> Tuple[int, int]:
@@ -97,7 +97,7 @@ class MouseClicker:
     def _resolve_child(self, x: int, y: int) -> int:
         pt = ctypes.wintypes.POINT(x, y)
         child = user32.ChildWindowFromPointEx(
-            self.hwnd, pt, cwpSkipInvisible | cwpSkipTransparent)
+            self.hwnd, pt, cwp_skip_invisible | cwp_skip_transparent)
         return child if child else self.hwnd
 
     def click(self, x: int, y: int, button: str = "left"):
@@ -106,34 +106,34 @@ class MouseClicker:
         target = self._resolve_child(sx, sy)
         lparam = make_lparam(sx, sy)
 
-        user32.PostMessageW(target, wmMouseMove, 0, lparam)
+        user32.PostMessageW(target, wm_mouse_move, 0, lparam)
         time.sleep(0.02)
 
         if button == "left":
-            user32.PostMessageW(target, wmLeftButtonDown, mkLeftButton, lparam)
+            user32.PostMessageW(target, wm_left_button_down, mk_left_button, lparam)
             time.sleep(0.03)
-            user32.PostMessageW(target, wmLeftButtonUp, 0, lparam)
+            user32.PostMessageW(target, wm_left_button_up, 0, lparam)
         else:
-            user32.PostMessageW(target, wmRightButtonDown, 0, lparam)
+            user32.PostMessageW(target, wm_right_button_down, 0, lparam)
             time.sleep(0.03)
-            user32.PostMessageW(target, wmRightButtonUp, 0, lparam)
+            user32.PostMessageW(target, wm_right_button_up, 0, lparam)
 
     def mouse_down(self, button: str = "left"):
         """发送鼠标按下消息"""
         lparam = make_lparam(0, 0)
         if button == "left":
-            user32.PostMessageW(self.hwnd, wmLeftButtonDown, mkLeftButton, lparam)
+            user32.PostMessageW(self.hwnd, wm_left_button_down, mk_left_button, lparam)
         elif button == "right":
-            user32.PostMessageW(self.hwnd, wmRightButtonDown, 0, lparam)
+            user32.PostMessageW(self.hwnd, wm_right_button_down, 0, lparam)
         elif button == "middle":
-            user32.PostMessageW(self.hwnd, wmMiddleButtonDown, mkMiddleButton, lparam)
+            user32.PostMessageW(self.hwnd, wm_middle_button_down, mk_middle_button, lparam)
 
     def mouse_up(self, button: str = "left"):
         """发送鼠标松开消息"""
         lparam = make_lparam(0, 0)
         if button == "left":
-            user32.PostMessageW(self.hwnd, wmLeftButtonUp, 0, lparam)
+            user32.PostMessageW(self.hwnd, wm_left_button_up, 0, lparam)
         elif button == "right":
-            user32.PostMessageW(self.hwnd, wmRightButtonUp, 0, lparam)
+            user32.PostMessageW(self.hwnd, wm_right_button_up, 0, lparam)
         elif button == "middle":
-            user32.PostMessageW(self.hwnd, wmMiddleButtonUp, 0, lparam)
+            user32.PostMessageW(self.hwnd, wm_middle_button_up, 0, lparam)

@@ -1,27 +1,25 @@
 """
 Win32 消息常量与虚拟键码表
-
-所有标识符使用驼峰命名，避免 PyCharm 拼写检查警告。
 """
 
 # 鼠标消息
-wmLeftButtonDown = 0x0201
-wmLeftButtonUp = 0x0202
-wmRightButtonDown = 0x0204
-wmRightButtonUp = 0x0205
-wmMiddleButtonDown = 0x0207
-wmMiddleButtonUp = 0x0208
-wmMouseMove = 0x0200
-wmMouseWheel = 0x020A
-mkLeftButton = 0x0001
-mkMiddleButton = 0x0010
+wm_left_button_down = 0x0201
+wm_left_button_up = 0x0202
+wm_right_button_down = 0x0204
+wm_right_button_up = 0x0205
+wm_middle_button_down = 0x0207
+wm_middle_button_up = 0x0208
+wm_mouse_move = 0x0200
+wm_mouse_wheel = 0x020A
+mk_left_button = 0x0001
+mk_middle_button = 0x0010
 
 # 键盘消息
-wmKeyDown = 0x0100
-wmKeyUp = 0x0101
+wm_key_down = 0x0100
+wm_key_up = 0x0101
 
 # 虚拟键码
-Vk = {
+vk = {
     "A": 0x41, "B": 0x42, "C": 0x43, "D": 0x44,
     "E": 0x45, "F": 0x46, "G": 0x47, "H": 0x48,
     "I": 0x49, "J": 0x4A, "K": 0x4B, "L": 0x4C,
@@ -40,7 +38,7 @@ Vk = {
 }
 
 # 游戏键别名
-GameKeys = {
+game_keys = {
     "w": "W", "a": "A", "s": "S", "d": "D",
     "e": "E", "q": "Q", "z": "Z", "r": "R",
     "space": "SPACE", "空格": "SPACE",
@@ -51,8 +49,8 @@ GameKeys = {
 }
 
 # ChildWindowFromPointEx flags
-cwpSkipInvisible = 0x0001
-cwpSkipTransparent = 0x0004
+cwp_skip_invisible = 0x0001
+cwp_skip_transparent = 0x0004
 
 
 def make_lparam(x: int, y: int) -> int:
@@ -60,14 +58,14 @@ def make_lparam(x: int, y: int) -> int:
     return ((y & 0xFFFF) << 16) | (x & 0xFFFF)
 
 
-def resolve_vk(keyName: str) -> int:
+def resolve_vk(key_name: str) -> int:
     """将按键名解析为虚拟键码"""
-    key = keyName.strip().upper()
-    if key in Vk:
-        return Vk[key]
-    alias = GameKeys.get(keyName.strip().lower())
-    if alias and alias in Vk:
-        return Vk[alias]
+    key = key_name.strip().upper()
+    if key in vk:
+        return vk[key]
+    alias = game_keys.get(key_name.strip().lower())
+    if alias and alias in vk:
+        return vk[alias]
     if len(key) == 1 and "A" <= key <= "Z":
-        return Vk[key]
-    raise ValueError(f"未知按键: {keyName}")
+        return vk[key]
+    raise ValueError(f"未知按键: {key_name}")
