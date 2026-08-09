@@ -16,7 +16,10 @@ class HomePage(BasePage):
     def detect(self, screenshot: np.ndarray) -> bool:
         """检测是否在主城 — 图标行约8个"""
         _ = self.recognizer
-        return self.recognizer.count_icons_in_row(screenshot) >= 6
+        count = self.recognizer.count_icons_in_row(screenshot)
+        result = count >= 6
+        logger.debug(f"home.detect: icons={count} threshold=6 result={result}")
+        return result
 
     def enter_dungeon(self, clicker):
         """进入副本菜单（按 L 键）"""

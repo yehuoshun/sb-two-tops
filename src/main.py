@@ -91,20 +91,26 @@ class SBAuto:
     def _identify(self, screenshot) -> PageState:
         # 结算页 OCR 优先
         if self.dungeon.is_settlement_page(screenshot):
+            logger.debug("identify -> SETTLEMENT")
             return PageState.SETTLEMENT
 
         if self.home.detect(screenshot):
+            logger.debug("identify -> HOME")
             return PageState.HOME
 
         if self.battle.detect(screenshot):
+            logger.debug("identify -> IN_DUNGEON")
             return PageState.IN_DUNGEON
 
         if self.dungeon.is_confirm_page(screenshot):
+            logger.debug("identify -> CONFIRM")
             return PageState.CONFIRM
 
         if self.dungeon_select.detect(screenshot):
+            logger.debug("identify -> DUNGEON_SELECT")
             return PageState.DUNGEON_SELECT
 
+        logger.debug("identify -> UNKNOWN")
         return PageState.UNKNOWN
 
     def _on_state_change(self, new_state: PageState):

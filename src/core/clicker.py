@@ -106,6 +106,8 @@ class MouseClicker:
         target = self._resolve_child(sx, sy)
         lparam = make_lparam(sx, sy)
 
+        logger.debug(f"click: ({x},{y}) -> scaled ({sx},{sy}) hwnd={target} btn={button}")
+
         user32.PostMessageW(target, wm_mouse_move, 0, lparam)
         time.sleep(0.02)
 

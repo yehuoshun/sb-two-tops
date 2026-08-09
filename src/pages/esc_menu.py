@@ -30,8 +30,10 @@ class EscMenuPage(BasePage):
             result = ocr.find_text(screenshot, keyword, min_score=0.3,
                                    region=center_region)
             if result:
-                logger.debug(f"OCR 检测到 ESC 菜单: {keyword}")
+                cx, cy, score = result
+                logger.debug(f"esc.detect_ocr: {keyword} @ ({cx},{cy}) score={score:.3f} -> True")
                 return True
+        logger.debug("esc.detect_ocr: 未找到 ESC 关键词 -> False")
         return False
 
     def dismiss(self, controller):

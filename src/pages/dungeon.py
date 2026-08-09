@@ -39,8 +39,9 @@ class DungeonSelectPage(BasePage):
         """检测是否在副本选择页 — 图标行约2个，OCR 兜底"""
         count = self.recognizer.count_icons_in_row(screenshot)
         if 1 <= count <= 3:
+            logger.debug(f"dungeon.detect: icons={count} in [1,3] -> True")
             return True
-        # OCR 兜底：检测 tab 栏文字
+        logger.debug(f"dungeon.detect: icons={count} not in [1,3] -> False")
         return False
 
     def detect_ocr(self, ocr, screenshot) -> bool:
@@ -49,7 +50,10 @@ class DungeonSelectPage(BasePage):
         result = ocr.find_text(screenshot, "委托", min_score=0.3,
                                region=tab_region)
         if result:
+            cx, cy, score = result
+            logger.debug(f"dungeon.detect_ocr: 委托 @ ({cx},{cy}) score={score:.3f} -> True")
             return True
+        logger.debug("dungeon.detect_ocr: 未找到 委托 -> False")
         return False
 
     def select_tab(self, clicker, tab_name: str = "委托"):

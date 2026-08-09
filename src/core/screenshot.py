@@ -90,6 +90,7 @@ class Screenshot:
             OpenCV BGR numpy array (H, W, 3)，失败返回 None
         """
         if self.hwnd is None:
+            logger.warning("截图失败: hwnd 为空")
             return None
 
         if not self._init_mss():
@@ -101,12 +102,16 @@ class Screenshot:
                 return None
 
             # 将游戏窗口提到前台，确保 MSS 截到的是游戏画面
+            fg_ok = False
             try:
-                win32gui.SetForegroundWindow(self.hwnd)
+                fg_ok = win32gui.SetForegroundWindow(self.hwnd)
                 import time
                 time.sleep(0.05)
             except Exception:
                 pass
+
+            if not fg_ok:
+                logger.debug("SetForegroundWindow 可能失败（ACE 拦截）")
 
             # 获取客户区在屏幕上的位置
             pt = win32gui.ClientToScreen(self.hwnd, (0, 0))
@@ -124,7 +129,14 @@ class Screenshot:
 
             # MSS 返回 BGRA，转 BGR
             img = np.array(sct_img)
-            return img[:, :, :3].copy()
+            bgr = img[:, :, :3].copy()
+
+            logger.debug(
+                f"截图: {self._width}x{self._height} "
+                f"mean={bgr.mean():.0f} "
+                f"region=({left},{top},{right},{bottom})"
+            )
+            return bgr
 
         except Exception as e:
             logger.error(f"截图失败: {e}")
