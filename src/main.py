@@ -48,6 +48,7 @@ class SBAuto:
         self._loading_start = 0
         self._unknown_count = 0
         self._max_unknown = 10
+        self._battle_start = 0.0
 
     def _init_logging(self):
         level = getattr(logging, self.config.get("log", "level", default="INFO").upper(), logging.INFO)
@@ -98,7 +99,8 @@ class SBAuto:
             logger.debug("identify -> HOME")
             return PageState.HOME
 
-        if self.battle.detect(screenshot):
+        # 战斗页 OCR 检测（兜底不依赖模板匹配）
+        if self.dungeon.is_battle_page(screenshot):
             logger.debug("identify -> IN_DUNGEON")
             return PageState.IN_DUNGEON
 
@@ -106,9 +108,14 @@ class SBAuto:
             logger.debug("identify -> CONFIRM")
             return PageState.CONFIRM
 
-        if self.dungeon_select.detect(screenshot):
+        if self.dungeon_select.detect_ocr(self.ocr, screenshot):
             logger.debug("identify -> DUNGEON_SELECT")
             return PageState.DUNGEON_SELECT
+
+        # 画面偏暗 → 可能加载中
+        if screenshot is not None and screenshot.mean() < 30:
+            logger.debug("identify -> LOADING (dark)")
+            return PageState.LOADING
 
         logger.debug("identify -> UNKNOWN")
         return PageState.UNKNOWN
@@ -117,6 +124,9 @@ class SBAuto:
         if new_state != PageState.UNKNOWN:
             self._unknown_count = 0
         if new_state != self.state:
+            # 退出战斗状态时重置战斗计时
+            if self.state == PageState.IN_DUNGEON and new_state != PageState.IN_DUNGEON:
+                self._battle_start = 0.0
             logger.info(f"状态切换: {self.state.name} → {new_state.name}")
             self.state = new_state
 
@@ -152,6 +162,12 @@ class SBAuto:
         logger.info(f"加载中... ({elapsed:.0f}s)")
 
     def _handle_unknown(self, screenshot):
+        # 画面偏暗 → 正在加载，不计数
+        if screenshot is not None and screenshot.mean() < 30:
+            logger.debug("画面偏暗，可能正在加载")
+            time.sleep(1)
+            return
+
         self._unknown_count += 1
         if self._unknown_count >= self._max_unknown:
             logger.warning(f"连续未知 {self._unknown_count} 次，尝试恢复窗口")
@@ -160,9 +176,21 @@ class SBAuto:
             self._unknown_count = 0
 
     def _handle_battle(self, screenshot):
-        logger.info("战斗开始")
-        self.dungeon.battle()
-        logger.info("战斗结束")
+        # 检查结算页（战斗结束信号）
+        if self.dungeon.is_settlement_page(screenshot):
+            logger.info("战斗结束，检测到结算页")
+            self._battle_start = 0.0
+            return
+
+        # 首次进入战斗
+        if self._battle_start == 0.0:
+            self._battle_start = time.time()
+            logger.info("战斗开始")
+            return
+
+        # 战斗循环单次迭代
+        elapsed = time.time() - self._battle_start
+        self.dungeon.battle_tick(elapsed)
 
     def _handle_settlement(self, screenshot):
         self.run_count += 1

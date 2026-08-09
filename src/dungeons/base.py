@@ -47,6 +47,9 @@ class BaseDungeon:
     confirm_region: tuple = (400, 500, 1120, 400)
     settlement_region: tuple = (300, 600, 1320, 420)
 
+    # 战斗 OCR 检测关键词
+    battle_keywords: list = ["当前轮次", "轮次", "倒计时", "战斗"]
+
     def __init__(self, ocr: OCR, controller: GameController):
         self.ocr = ocr
         self.controller = controller
@@ -126,25 +129,42 @@ class BaseDungeon:
 
     # ── 战斗 ──
 
-    def battle(self) -> float:
-        """战斗循环
+    def battle_tick(self, elapsed: float) -> bool:
+        """战斗循环单次迭代
+
+        每次调用做一轮技能操作，由主循环驱动。
+
+        Args:
+            elapsed: 已战斗时长（秒）
 
         Returns:
-            float: 实际战斗时长（秒）
+            bool: True=战斗中，False=超时
         """
-        import time as _time
-        start = _time.time()
-        elapsed = 0.0
-        while elapsed < self.battle_timeout:
+        if elapsed >= self.battle_timeout:
+            logger.warning(f"[{self.name}] 战斗超时 ({self.battle_timeout:.0f}s)")
+            return False
+
+        # 交替放技能
+        cycle = int(elapsed / self.battle_interval)
+        if cycle % 2 == 0:
             self.controller.use_ultimate()
-            _time.sleep(self.battle_interval * 0.5)
+        else:
             self.controller.ranged_attack()
-            _time.sleep(self.battle_interval * 0.5)
-            elapsed = _time.time() - start
-            if elapsed >= self.battle_timeout:
-                break
-            logger.info(f"[{self.name}] 战斗中... ({elapsed:.0f}s)")
-        return elapsed
+
+        logger.info(f"[{self.name}] 战斗中... ({elapsed:.0f}s)")
+        return True
+
+    def is_battle_page(self, screenshot) -> bool:
+        """OCR 检测是否在战斗中
+
+        搜索战斗相关文字，不依赖模板匹配。
+        """
+        for keyword in self.battle_keywords:
+            result = self.ocr.find_text(screenshot, keyword, min_score=0.3)
+            if result:
+                logger.debug(f"[{self.name}] 战斗页检测: {keyword} score={result[2]:.3f}")
+                return True
+        return False
 
     # ── 结算 ──
 
@@ -166,6 +186,14 @@ class BaseDungeon:
         logger.warning(f"[{self.name}] 结算按钮未找到")
         return False
 
+    def is_settlement_page(self, screenshot) -> bool:
+        """检测是否在结算页"""
+        for keyword in self.settlement_keywords:
+            if self.ocr.find_text(screenshot, keyword, min_score=0.3,
+                                  region=self.settlement_region):
+                return True
+        return False
+
     # ── 页面检测（OCR 辅助） ──
 
     def is_confirm_page(self, screenshot) -> bool:
@@ -173,13 +201,5 @@ class BaseDungeon:
         for keyword in self.confirm_keywords:
             if self.ocr.find_text(screenshot, keyword, min_score=0.3,
                                   region=self.confirm_region):
-                return True
-        return False
-
-    def is_settlement_page(self, screenshot) -> bool:
-        """检测是否在结算页"""
-        for keyword in self.settlement_keywords:
-            if self.ocr.find_text(screenshot, keyword, min_score=0.3,
-                                  region=self.settlement_region):
                 return True
         return False

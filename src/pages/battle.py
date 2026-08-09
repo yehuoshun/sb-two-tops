@@ -18,12 +18,26 @@ class BattlePage(BasePage):
     """战斗页面 — 检测"探险/无尽" + "当前轮次"文字"""
 
     def detect(self, screenshot: np.ndarray) -> bool:
-        """检测是否在战斗中（双模板匹配：探险 + 当前轮次）"""
+        """检测是否在战斗中（模板匹配 + OCR 兜底）"""
         if self.recognizer.detect_page(screenshot, "battle"):
             return True
-        # OCR 兜底：检测战斗相关文字
-        # 战斗中有"当前轮次"、"倒计时"等文字
-        # 战斗外没有这些文字，所以用 OCR 检测
+        return False
+
+    def detect_ocr(self, ocr, screenshot: np.ndarray) -> bool:
+        """OCR 检测是否在战斗中
+
+        Args:
+            ocr: OCR 实例
+            screenshot: 截图
+
+        Returns:
+            bool: 是否在战斗中
+        """
+        for keyword in ["当前轮次", "轮次", "倒计时", "战斗"]:
+            result = ocr.find_text(screenshot, keyword, min_score=0.3)
+            if result:
+                logger.debug(f"battle.detect_ocr: {keyword} score={result[2]:.3f} -> True")
+                return True
         return False
 
     def use_skill(self, clicker, key_code: int):
