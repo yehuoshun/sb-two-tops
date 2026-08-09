@@ -41,16 +41,16 @@ class DungeonSelectPage(BasePage):
         return False
 
     def detect_ocr(self, ocr, screenshot) -> bool:
-        """OCR 检测顶部 tab 栏是否有委托/夜航手册等文字"""
-        tab_region = (150, 30, 450, 90)
-        for keyword in ["委托", "夜航手册", "委托密函", "悬赏委托"]:
-            result = ocr.find_text(screenshot, keyword, min_score=0.3,
-                                   region=tab_region)
-            if result:
-                cx, cy, score = result
-                logger.debug(f"dungeon.detect_ocr: {keyword} @ ({cx},{cy}) score={score:.3f} -> True")
-                return True
-        logger.debug("dungeon.detect_ocr: 未找到 tab 关键词 -> False")
+        """OCR 检测顶部 tab 栏是否有委托文字"""
+        # 缩小区域，只搜委托按钮所在位置
+        tab_region = (500, 40, 200, 60)
+        result = ocr.find_text(screenshot, "委托", min_score=0.3,
+                               region=tab_region)
+        if result:
+            cx, cy, score = result
+            logger.debug(f"dungeon.detect_ocr: 委托 @ ({cx},{cy}) score={score:.3f} -> True")
+            return True
+        logger.debug("dungeon.detect_ocr: 未找到 委托 -> False")
         return False
 
     def select_tab(self, clicker, tab_name: str = "委托"):

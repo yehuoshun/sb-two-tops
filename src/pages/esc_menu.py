@@ -25,8 +25,9 @@ class EscMenuPage(BasePage):
 
     def detect_ocr(self, ocr, screenshot: np.ndarray) -> bool:
         """OCR 检测中间区域是否有背包或商店"""
-        center_region = (200, 100, 1000, 400)
-        for keyword in ["背包", "商店", "活动"]:
+        # 缩小区域，减少 OCR 搜索时间
+        center_region = (200, 150, 800, 300)
+        for keyword in ["背包", "商店"]:
             result = ocr.find_text(screenshot, keyword, min_score=0.3,
                                    region=center_region)
             if result:

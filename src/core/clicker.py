@@ -91,6 +91,8 @@ class MouseClicker:
         user32.GetWindowRect(self.hwnd, ctypes.byref(rect))
         screen_x = rect.left + sx
         screen_y = rect.top + sy
+        logger.debug(f"scroll: window=({rect.left},{rect.top},{rect.right},{rect.bottom}) "
+                     f"client=({sx},{sy}) screen=({screen_x},{screen_y})")
 
         for _ in range(times):
             # 光标移到窗口滚动区域（SendInput 需要光标在窗口上）
