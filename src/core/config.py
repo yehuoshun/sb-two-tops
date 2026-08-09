@@ -51,7 +51,7 @@ class Config:
 
     @property
     def window_class(self) -> Optional[str]:
-        return self.get("game", "window_class", default=None)
+        return cast(Optional[str], self.get("game", "window_class", default=None))
 
     @property
     def scale(self):
@@ -59,4 +59,4 @@ class Config:
 
     @property
     def post_click_wait_ms(self) -> int:
-        return self.get("game", "post_click_wait_ms", default=500)
+        return cast(int, self.get("game", "post_click_wait_ms", default=500))
