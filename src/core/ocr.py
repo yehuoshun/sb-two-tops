@@ -57,7 +57,7 @@ class OCR:
                     return self.read(image)
             return []
 
-        if result.txts is None or len(result) == 0:
+        if result.txts is None or result.boxes is None or len(result) == 0:
             return []
 
         parsed = []
