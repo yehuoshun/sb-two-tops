@@ -100,25 +100,29 @@ def main():
     if home.detect(img):
         print("  OK: 主城 -> L")
         controller.press_key("L", down_time=0.1)
-        ok, _ = _wait_until(ss, is_dungeon_page, timeout=3)
-        if not ok:
-            # 可能进了导航页（今日行程等），点顶部的委托 tab
-            print("  tab: 委托")
+        # 等 1.5s 先检查一次，不行再等 1.5s
+        time.sleep(1.5)
+        img = ss.capture()
+        if img and not is_dungeon_page(img):
+            time.sleep(1.5)
             img = ss.capture()
-            if img is not None:
-                r = ocr.find_text(img, "委托", min_score=0.3, region=(200, 30, 500, 60))
-                if r:
-                    controller.click(r[0], r[1])
-                    ok, _ = _wait_until(ss, is_dungeon_page, timeout=5)
-                else:
-                    # 再试一次 L
-                    _dismiss_esc(ss, ocr, esc_menu, controller)
-                    print("  retry L")
-                    controller.press_key("L", down_time=0.1)
-                    ok, _ = _wait_until(ss, is_dungeon_page, timeout=5)
-            if not ok:
-                print("FAIL: 无法进入副本页")
-                sys.exit(1)
+        if img and not is_dungeon_page(img):
+            # 可能进了导航页，点顶部委托 tab
+            print("  tab: 委托")
+            r = ocr.find_text(img, "委托", min_score=0.3, region=(200, 30, 500, 60))
+            if r:
+                controller.click(r[0], r[1])
+                time.sleep(1.5)
+                img = ss.capture()
+            else:
+                _dismiss_esc(ss, ocr, esc_menu, controller)
+                print("  retry L")
+                controller.press_key("L", down_time=0.1)
+                time.sleep(2)
+                img = ss.capture()
+        if not img or not is_dungeon_page(img):
+            print("FAIL: 无法进入副本页")
+            sys.exit(1)
     elif is_dungeon_page(img):
         print("  OK: 已在副本页")
     else:
@@ -137,8 +141,9 @@ def main():
         _dismiss_esc(ss, ocr, esc_menu, controller)
 
         print("  #" + str(attempt) + " ", end="", flush=True)
-        ok, img = _wait_until(ss, lambda i: True, timeout=3)
-        if not ok:
+        img = ss.capture()
+        if img is None:
+            time.sleep(0.3)
             continue
 
         result = ocr.find_text(img, target, min_score=0.3)
