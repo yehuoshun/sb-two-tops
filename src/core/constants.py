@@ -1,6 +1,7 @@
 """
 Win32 消息常量与虚拟键码表
 """
+# noinspection SpellCheckingInspection
 
 # ── 鼠标消息 ──
 WM_LBUTTONDOWN = 0x0201
