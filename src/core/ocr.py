@@ -56,11 +56,12 @@ class OCR:
         if not self._lazy_init():
             return []
 
-        if self._engine is None:
+        engine = self._engine
+        if engine is None:
             return []
 
         try:
-            result = self._engine(image)
+            result = engine(image)
         except Exception as e:
             err_str = str(e)
             logger.error(f"OCR 识别失败: {err_str}")
