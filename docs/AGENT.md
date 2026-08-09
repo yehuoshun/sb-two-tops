@@ -42,7 +42,7 @@
 ├── README.md                      # 使用文档
 ├── docs/                          # 项目文档
 │   ├── AGENT.md                   # 本文件
-│   ├── CODE_STYLE.md              # 开发规范
+│   ├── CODE_STYLE.md              # 开发规范（写代码前必读）
 │   ├── design.md                  # 设计文档
 │   └── progress.md                # 开发进度
 ├── src/
