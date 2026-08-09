@@ -108,12 +108,12 @@ def main():
         """截图的完整诊断信息"""
         stats = {
             "size": f"{img.shape[1]}x{img.shape[0]}",
-            "mean": f"{img.mean():.0f}",
+            "mean": f"{int(img.mean()):d}",
             "icons": recognizer.count_icons_in_row(img),
         }
 
         # 检查是否全黑/全白
-        mean_val = img.mean()
+        mean_val = float(img.mean())
         if mean_val < 10:
             logger.warning(f"截图疑似全黑 mean={mean_val:.0f}")
             _save_debug_screenshot(img, f"black_{label}")
