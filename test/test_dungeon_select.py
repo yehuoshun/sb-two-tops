@@ -1,5 +1,5 @@
 """
-测试：主城 -> 进入副本 -> 选择扼守 -> 选难度
+测试：主城 -> 进入副本 -> 选择扼守 -> 选难度 -> 开始挑战
 
 使用轮询重试替代固定等待，遇到状态变化立即继续，卡住才超时报错。
 
@@ -293,9 +293,51 @@ def main():
                 logger.info(f"  ... 还有 {len(all_texts)-20} 条")
         logger.warning(f"未找到难度 {difficulty}")
 
+    # ── Step 4: 点击开始挑战 ──
+    logger.info("─" * 40)
+    logger.info("Step 4/4: 点击[开始挑战]")
+
+    # 等确认页稳定
+    time.sleep(0.5)
+    img = ss.capture()
+    if img is not None:
+        diagnose_screenshot(img, "step4_before_confirm")
+
+    def check_confirm(img):
+        return dungeon.confirm(img)
+
+    ok, confirm_img = _wait_until(ss, check_confirm, timeout=10, interval=0.3)
+    if ok:
+        logger.info("✅ [开始挑战] 已点击")
+        # 等待画面变化（不再是确认页）
+        time.sleep(1.0)
+        after = ss.capture()
+        if after is not None:
+            diagnose_screenshot(after, "step4_after_confirm")
+            # 用 get_page_label 判断当前页面
+            is_settle = dungeon.is_settlement_page(after)
+            is_battle = dungeon.is_battle_page(after)
+            is_home = home.detect(after)
+            is_dungeon = is_dungeon_page(after)
+            is_confirm = dungeon.is_confirm_page(after)
+            logger.info(f"点击后页面: settlement={is_settle} battle={is_battle} home={is_home} dungeon={is_dungeon} confirm={is_confirm}")
+            if is_dungeon or is_confirm:
+                logger.warning("仍在副本/确认页，点开始挑战可能没生效")
+    else:
+        if confirm_img is not None:
+            _save_debug_screenshot(confirm_img, "fail_step4_confirm")
+            all_texts = ocr.read(confirm_img)
+            logger.info(f"确认页 OCR 结果 ({len(all_texts)} 条):")
+            for text, cx, cy, score in all_texts[:20]:
+                logger.info(f"  \"{text}\" @ ({cx},{cy}) score={score:.3f}")
+            if len(all_texts) > 20:
+                logger.info(f"  ... 还有 {len(all_texts)-20} 条")
+        logger.error("未找到 [开始挑战] 按钮")
+        sys.exit(1)
+
     # ── 完成 ──
     logger.info("=" * 40)
-    logger.info(f"OK: {target} - {difficulty}")
+    logger.info(f"OK: {target} - {difficulty} — 已进入副本")
     logger.info("确认后告诉我后续")
     logger.info("=" * 40)
 
