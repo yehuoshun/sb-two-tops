@@ -158,6 +158,7 @@ def main():
 
     if is_home:
         logger.info("主城 -> 按 L 键")
+        ss.bring_to_foreground()
         controller.press_key("L", down_time=0.1)
         logger.debug("L 键已发送")
 
@@ -190,6 +191,7 @@ def main():
             else:
                 _dismiss_esc(ss, ocr, esc_menu, controller)
                 logger.info("未找到 tab，重试 L")
+                ss.bring_to_foreground()
                 controller.press_key("L", down_time=0.1)
                 time.sleep(2)
                 img = ss.capture()
