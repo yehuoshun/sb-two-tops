@@ -102,15 +102,15 @@ DETECT_CONFIG = {
 
 ## 按键方案
 
-| 操作 | 按键 | 方法 |
-|--------------|--------------------|--------------------|
+| 操作         | 按键       | 方法                |
+|--------------|------------|---------------------|
 | 攻击 | 鼠标左键 | `clicker.attack()` |
 | 重击/特殊攻击 | 按住左键 | `clicker.attack_heavy()` |
 | 瞄准 | 鼠标右键 | `clicker.aim()` |
 | 锁定目标 | 鼠标中键 | `clicker.lock_target()` |
 | 小技能 | E | `clicker.use_skill()` |
 | 大招 | Q | `clicker.use_ultimate()` |
-| 魔灵技能 | Z | `clicker.use_geniemon()` |
+| 魔灵技能 | Z | `clicker.use_monster()` |
 | 螺旋飞跃 | 4 | `clicker.helix_leap()` |
 | 闪避 | SHIFT | `clicker.dodge()` |
 | 跳跃/确认 | SPACE | `clicker.jump()` |
