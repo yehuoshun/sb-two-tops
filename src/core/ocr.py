@@ -10,18 +10,6 @@ OCR 模块 — RapidOCR 识字
 import logging
 from typing import List, Optional, Tuple
 
-# 延迟导入 RapidOCROutput 类型，用于 isinstance 检查
-# 实际导入在 _check_engine 中完成
-import importlib
-
-
-def _get_rapidocr_output():
-    try:
-        mod = importlib.import_module('rapidocr.utils.output')
-        return mod.RapidOCROutput
-    except ImportError:
-        return None
-
 logger = logging.getLogger("sb-two-tops.ocr")
 
 
@@ -39,14 +27,13 @@ class OCR:
             from rapidocr import RapidOCR
             return RapidOCR()
         except ImportError:
-            logger.error("rapidocr 未安装，请执行: pip install rapidocr onnxruntime")
+            logger.error("rapidocr 未安装")
             return None
         except Exception as e:
             logger.error(f"RapidOCR 初始化失败: {e}")
             return None
 
     def _reinit(self):
-        """重建引擎（处理内存泄漏后的 bad allocation）"""
         self._retries += 1
         if self._retries > self._max_retries:
             logger.error(f"OCR 重建超过 {self._max_retries} 次，放弃")
@@ -69,13 +56,14 @@ class OCR:
                     return self.read(image)
             return []
 
-        output_cls = _get_rapidocr_output()
-        if output_cls is None or not isinstance(result, output_cls):
+        # 从 RapidOCROutput 提取数据
+        try:
+            texts = result.txts
+            boxes = result.boxes
+            scores = result.scores
+        except AttributeError:
             return []
 
-        texts = result.txts
-        boxes = result.boxes
-        scores = result.scores
         if not texts or boxes is None or scores is None:
             return []
 
